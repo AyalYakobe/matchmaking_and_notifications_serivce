@@ -1,0 +1,173 @@
+openapi: 3.0.0
+info:
+  title: Matchmaking & Notification Service
+  version: 1.0.0
+servers:
+- url: http://localhost:8000
+paths:
+  /matches:run:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/_matches_run_post_request"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+          description: Match results
+      summary: Run matching for a donor or organ
+  /matches/{id}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+          description: Match found
+      summary: Get a match by ID
+  /matches:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: donorId
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Match"
+                type: array
+          description: List of matches
+      summary: Get matches filtered by donorId
+  /offers:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Offer"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Offer"
+          description: Offer created
+      summary: Create an allocation offer
+  /offers/{id}:
+    put:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/_offers__id__put_request"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Offer"
+          description: Offer updated
+      summary: Update offer status
+  /health:
+    get:
+      responses:
+        "200":
+          description: OK
+      summary: Health check
+components:
+  schemas:
+    Match:
+      example:
+        recipientId: recipientId
+        donorId: donorId
+        id: id
+        status: status
+      properties:
+        id:
+          title: id
+          type: string
+        donorId:
+          title: donorId
+          type: string
+        recipientId:
+          title: recipientId
+          type: string
+        status:
+          title: status
+          type: string
+      title: Match
+      type: object
+    Offer:
+      example:
+        id: id
+        matchId: matchId
+        status: pending
+      properties:
+        id:
+          title: id
+          type: string
+        matchId:
+          title: matchId
+          type: string
+        status:
+          enum:
+          - pending
+          - accepted
+          - declined
+          - expired
+          title: status
+          type: string
+      title: Offer
+      type: object
+    _matches_run_post_request:
+      properties:
+        donorId:
+          title: donorId
+          type: string
+        organId:
+          title: organId
+          type: string
+      title: _matches_run_post_request
+      type: object
+    _offers__id__put_request:
+      properties:
+        status:
+          enum:
+          - accepted
+          - declined
+          - expired
+          title: status
+          type: string
+      title: _offers__id__put_request
+      type: object
