@@ -20,32 +20,19 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class Match(BaseModel):
+class HealthPutRequest(BaseModel):
     """
-    Match
+    HealthPutRequest
     """ # noqa: E501
-    id: Optional[StrictStr] = None
-    donor_id: StrictStr = Field(alias="donorId")
-    organ_id: StrictStr = Field(alias="organId")
-    status: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["id", "donorId", "organId", "status"]
-
-    @field_validator('status')
-    def status_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        if value not in ('pending', 'accepted', 'declined', 'expired',):
-            raise ValueError("must be one of enum values ('pending', 'accepted', 'declined', 'expired')")
-        return value
+    mode: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["mode"]
 
     model_config = {
         "populate_by_name": True,
@@ -65,7 +52,7 @@ class Match(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of Match from a JSON string"""
+        """Create an instance of HealthPutRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -88,7 +75,7 @@ class Match(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of Match from a dict"""
+        """Create an instance of HealthPutRequest from a dict"""
         if obj is None:
             return None
 
@@ -96,10 +83,7 @@ class Match(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "id": obj.get("id"),
-            "donorId": obj.get("donorId"),
-            "organId": obj.get("organId"),
-            "status": obj.get("status")
+            "mode": obj.get("mode")
         })
         return _obj
 
