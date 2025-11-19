@@ -18,6 +18,8 @@ from openapi_server.apis.default_api import router as DefaultApiRouter
 
 # Import your database connection helper
 from openapi_server.impl.db import get_connection
+from openapi_server.impl.donor_registry_client import get_health, list_donors
+
 
 
 # ===============================================================
@@ -61,3 +63,13 @@ def db_test_c():
     conn.close()
 
     return {"connected_to": row[0]}
+
+@app.get("/check-donor-service")
+def check_donor_service():
+    return {
+        "health": get_health()
+    }
+
+@app.get("/donors-from-registry")
+def donors_from_registry():
+    return list_donors()
