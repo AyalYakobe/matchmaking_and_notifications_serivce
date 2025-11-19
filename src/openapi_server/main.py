@@ -12,18 +12,24 @@ intentionally want to disable API sections.
 """
 
 from fastapi import FastAPI
-
-# Import the generated API router
 from openapi_server.apis.default_api import router as DefaultApiRouter
 
-# Import your database connection helper
+# Internal DB
 from openapi_server.impl.db import get_connection
-from openapi_server.impl.donor_registry_client import get_health, list_donors
 
-
+# Donor Registry (MS1) Client
+from openapi_server.impl.donor_registry_client import (
+    get_health,
+    list_donors,
+    get_donor,
+    list_organs_for_donor,
+    list_organs,
+    list_consents,
+    get_consent,
+)
 
 # ===============================================================
-# 1. Create the FastAPI application instance
+# 1. Create FastAPI application instance
 # ===============================================================
 app = FastAPI(
     title="Matchmaking and Notification Service API",
@@ -35,41 +41,77 @@ app = FastAPI(
     version="1.0.0",
 )
 
-
 # ===============================================================
-# 2. Register the auto-generated API routes
-#    (matches, offers, health, etc.)
+# 2. Register OpenAPI-generated routes
 # ===============================================================
 app.include_router(DefaultApiRouter)
 
 
 # ===============================================================
-# 3. Custom endpoint to verify Cloud SQL connectivity
-#    This is NOT part of the generated API. It is custom logic.
+# 3. INTERNAL: DB TEST ENDPOINT
 # ===============================================================
 @app.get("/db-test-c")
 def db_test_c():
-    """
-    Simple endpoint used ONLY to test DB connectivity.
-    Returns the name of the currently selected MySQL database.
-    """
+    """Test connection to Cloud SQL."""
     conn = get_connection()
     cur = conn.cursor()
-
     cur.execute("SELECT DATABASE()")
     row = cur.fetchone()
-
     cur.close()
     conn.close()
-
     return {"connected_to": row[0]}
 
-@app.get("/check-donor-service")
-def check_donor_service():
-    return {
-        "health": get_health()
-    }
 
-@app.get("/donors-from-registry")
-def donors_from_registry():
+# ===============================================================
+# 4. MS1: Donor Registry Service Endpoints
+# ===============================================================
+
+# --- Health ---
+@app.get("/ms1/health")
+def ms1_health():
+    """Check health of MS1."""
+    return get_health()
+
+
+# --- Donors ---
+@app.get("/ms1/donors")
+def ms1_list_donors():
     return list_donors()
+
+
+@app.get("/ms1/donors/{donor_id}")
+def ms1_get_donor(donor_id: str):
+    return get_donor(donor_id)
+
+
+@app.get("/ms1/donors/{donor_id}/organs")
+def ms1_organs_for_donor(donor_id: str):
+    return list_organs_for_donor(donor_id)
+
+
+# --- Organs ---
+@app.get("/ms1/organs")
+def ms1_list_organs():
+    return list_organs()
+
+
+# --- Consents ---
+@app.get("/ms1/consents")
+def ms1_list_consents():
+    return list_consents()
+
+
+@app.get("/ms1/consents/{consent_id}")
+def ms1_get_consent(consent_id: str):
+    return get_consent(consent_id)
+
+
+# --- Fetch ALL data from MS1 ---
+@app.get("/ms1/all")
+def ms1_all():
+    """Convenience endpoint to fetch donors, organs, and consents."""
+    return {
+        "donors": list_donors(),
+        "organs": list_organs(),
+        "consents": list_consents(),
+    }

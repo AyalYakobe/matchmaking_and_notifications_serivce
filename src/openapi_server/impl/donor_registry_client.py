@@ -25,3 +25,30 @@ def list_organs_for_donor(donor_id: str):
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
+
+def list_organs():
+    url = f"{DONOR_REGISTRY_BASE_URL}/organs"
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_organs_for_donor(donor_id: str):
+    url = f"{DONOR_REGISTRY_BASE_URL}/donors/{donor_id}/organs"
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+
+def list_consents():
+    url = f"{DONOR_REGISTRY_BASE_URL}/consents"
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_consent(consent_id: str):
+    url = f"{DONOR_REGISTRY_BASE_URL}/consents/{consent_id}"
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
