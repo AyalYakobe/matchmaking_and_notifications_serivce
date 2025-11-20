@@ -54,8 +54,8 @@ app.include_router(DefaultApiRouter)
 # 3. Initialize MS1 + MS2 Clients + Matcher
 # ===============================================================
 
-MS1_BASE = "https://composite-service-730071231868.us-central1.run.app"
-MS2_BASE = "https://composite-service-730071231868.us-central1.run.app"
+MS1_BASE = "https://donor-registry-service-730071231868.us-central1.run.app"
+MS2_BASE = "https://recipient-waitlist-service-695815011556.us-east1.run.app"
 
 ms1 = MS1Client(MS1_BASE)
 ms2 = MS2Client(MS2_BASE)
