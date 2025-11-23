@@ -17,17 +17,18 @@ Clients:
 - MS2Client (recipients, needs, hospitals)
 - Matcher (business logic matching organ ↔ need)
 """
-
 from fastapi import FastAPI
 from openapi_server.apis.default_api import router as DefaultApiRouter
 
 # Internal DB
-from openapi_server.impl.db import get_connection
+from openapi_server.db.connection import get_connection
 
 # Clients for MS1 + MS2
-from openapi_server.impl.ms1_client import MS1Client
-from openapi_server.impl.ms2_client import MS2Client
-from openapi_server.impl.matcher import Matcher
+from openapi_server.clients.ms1_client import MS1Client
+from openapi_server.clients.ms2_client import MS2Client
+
+# Matcher service
+from openapi_server.services.matcher import Matcher
 
 
 # ===============================================================
@@ -180,22 +181,14 @@ def ms2_all():
 # ===============================================================
 # 7. Composite “Aggregate” Endpoint
 # ===============================================================
+import requests
+
 @app.get("/aggregate/full-snapshot")
 def aggregate_full_snapshot():
-    """Return everything from MS1 and MS2."""
-    return {
-        "ms1": {
-            "donors": ms1.list_donors(),
-            "organs": ms1.list_organs(),
-            "consents": ms1.list_consents(),
-        },
-        "ms2": {
-            "recipients": ms2.list_recipients(),
-            "needs": ms2.list_needs(),
-            "hospitals": ms2.list_hospitals(),
-        },
-    }
-
+    url = f"{COMPOSITE_BASE}/snapshot/inventory"
+    r = requests.get(url)
+    r.raise_for_status()
+    return r.json()
 
 # ===============================================================
 # 8. MATCHMAKING ENDPOINT — CORE BUSINESS LOGIC
