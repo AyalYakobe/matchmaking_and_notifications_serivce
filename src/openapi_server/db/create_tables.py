@@ -1,12 +1,8 @@
-# src/openapi_server/impl/create_tables.py
-
-from openapi_server.impl.db import get_connection
+from openapi_server.db.connection import get_connection
 
 def create_tables():
     conn = get_connection()
     cur = conn.cursor()
-
-    # -------- TABLE DEFINITIONS ---------
 
     tables = {}
 
@@ -54,7 +50,6 @@ def create_tables():
     );
     """
 
-    # -------- EXECUTE TABLE CREATION ---------
     for name, ddl in tables.items():
         print(f"Creating table: {name} ...")
         cur.execute(ddl)
