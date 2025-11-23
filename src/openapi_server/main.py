@@ -4,76 +4,90 @@
 Matchmaking and Notification Service API
 ========================================
 
-This file defines the FastAPI application entrypoint.
+Entrypoint for the FastAPI microservice.
 
 ✔ Includes OpenAPI-generated routes
-✔ Exposes MS1 passthrough endpoints
-✔ Exposes MS2 passthrough endpoints
-✔ Adds a /match/do-match orchestration endpoint
-✔ Includes DB test endpoint
-
-Clients:
-- MS1Client (donors, organs, consents)
-- MS2Client (recipients, needs, hospitals)
-- Matcher (business logic matching organ ↔ need)
+✔ Includes OffersService (DB-backed)
+✔ Includes MatcherService for MS1/MS2 matching
+✔ Passthrough endpoints for MS1 + MS2
+✔ /match/do-match orchestration endpoint
+✔ Cloud SQL DB test endpoint
 """
+
+import requests
 from fastapi import FastAPI
+
+# OpenAPI-generated default routes
 from openapi_server.apis.default_api import router as DefaultApiRouter
 
 # Internal DB
 from openapi_server.db.connection import get_connection
 
-# Clients for MS1 + MS2
+# MS1 + MS2 clients
 from openapi_server.clients.ms1_client import MS1Client
 from openapi_server.clients.ms2_client import MS2Client
 
-# Matcher service
-from openapi_server.services.matcher import Matcher
+# Matcher service (business logic)
+from openapi_server.services.matche_service import Matcher
+
+# OffersService (DB-backed REST API)
+from openapi_server.services.offers_service import router as OffersRouter
+
 
 
 # ===============================================================
-# 1. Create FastAPI application instance
+# 1. FASTAPI APP
 # ===============================================================
 app = FastAPI(
     title="Matchmaking and Notification Service API",
-    description=(
-        "Microservice that orchestrates donor–recipient matching by "
-        "fetching data from MS1 (donors/organs) and MS2 (recipients/needs), "
-        "performing matching logic, and removing consumed resources."
-    ),
     version="1.0.0",
+    description=(
+        "This service orchestrates donor–recipient matching by calling MS1 "
+        "(donors/organs) and MS2 (recipients/needs), performing matching logic, "
+        "and providing a DB-backed Offers API."
+    )
 )
 
 
+
 # ===============================================================
-# 2. Register OpenAPI-generated routes
+# 2. AUTO-GENERATED OPENAPI ROUTES
 # ===============================================================
 app.include_router(DefaultApiRouter)
 
 
-# ===============================================================
-# 3. Initialize MS1 + MS2 Clients + Matcher
-# ===============================================================
 
+# ===============================================================
+# 3. CUSTOM SERVICES (Offers ONLY)
+# ===============================================================
+app.include_router(OffersRouter, prefix="/offers", tags=["Offers"])
+
+
+
+# ===============================================================
+# 4. Initialize MS1 + MS2 Clients + Matcher
+# ===============================================================
 COMPOSITE_BASE = "https://composite-service-730071231868.us-central1.run.app"
 
 ms1 = MS1Client(COMPOSITE_BASE)
 ms2 = MS2Client(COMPOSITE_BASE)
 matcher = Matcher(COMPOSITE_BASE, COMPOSITE_BASE)
 
+
+
 # ===============================================================
-# 4. INTERNAL: DB TEST ENDPOINT
+# 5. INTERNAL DB TEST
 # ===============================================================
 @app.get("/db-test-c")
 def db_test_c():
-    """Test connection to Cloud SQL."""
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("SELECT DATABASE()")
-    row = cur.fetchone()
+    value = cur.fetchone()[0]
     cur.close()
     conn.close()
-    return {"connected_to": row[0]}
+    return {"connected_to": value}
+
 
 
 # ===============================================================
@@ -179,36 +193,32 @@ def ms2_all():
 
 
 # ===============================================================
-# 7. Composite “Aggregate” Endpoint
+# 8. COMPOSITE SNAPSHOT
 # ===============================================================
-import requests
-
 @app.get("/aggregate/full-snapshot")
 def aggregate_full_snapshot():
-    url = f"{COMPOSITE_BASE}/snapshot/inventory"
-    r = requests.get(url)
+    r = requests.get(f"{COMPOSITE_BASE}/snapshot/inventory")
     r.raise_for_status()
     return r.json()
 
+
+
 # ===============================================================
-# 8. MATCHMAKING ENDPOINT — CORE BUSINESS LOGIC
+# 9. MATCHMAKING ENDPOINT (BUSINESS LOGIC)
 # ===============================================================
 @app.post("/match/do-match")
 def run_matching():
     """
-    Perform donor-organ ↔ recipient-need matching.
-
-    For each organ:
-      - Find compatible need
-      - Create a match record (in-memory return for now)
-      - DELETE organ (MS1)
-      - DELETE need (MS2)
-
-    Returns:
-        List of matches created.
+    Perform donor-organ ↔ recipient-need matching:
+    - Fetch organs from MS1
+    - Fetch needs from MS2
+    - Match based on organ_type
+    - DELETE consumed resources
+    - Return match results (in-memory)
     """
     matches = matcher.match_and_consume()
     return {
         "match_count": len(matches),
         "matches": matches,
     }
+
