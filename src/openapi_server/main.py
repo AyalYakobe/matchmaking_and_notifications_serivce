@@ -222,3 +222,16 @@ def run_matching():
         "matches": matches,
     }
 
+
+# ===============================================================
+# 10. VIEW ALL MATCHES (NEW ENDPOINT)
+# ===============================================================
+@app.get("/matches")
+def list_matches():
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM matches ORDER BY created_at DESC")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
