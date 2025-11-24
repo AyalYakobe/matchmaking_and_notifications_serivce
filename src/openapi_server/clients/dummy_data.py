@@ -2,16 +2,22 @@
 
 """
 Bulk Data Seeder for MS1 + MS2 via Composite API
-Generates 1000 donors, organs, consents, recipients, needs, hospitals.
+- 4 hospitals
+- 1000 recipients
+- 1000 needs
+- 1000 donors
+- 1000 organs
+- 1000 consents
 """
 
 import requests
 import random
-import uuid
 from datetime import datetime, timedelta
 
 BASE = "https://composite-service-730071231868.us-central1.run.app"
-COUNT = 1000   # <<< change here
+
+HOSPITAL_COUNT = 4
+COUNT = 1000   # for everything else
 
 # random helpers
 def rand_date():
@@ -26,10 +32,9 @@ def rand_bt():
 def rand_organ():
     return random.choice(["kidney", "heart", "liver", "lung"])
 
-# storage for linking
-donor_ids = []
-recipient_ids = []
 hospital_ids = []
+recipient_ids = []
+donor_ids = []
 
 def post(url, payload):
     r = requests.post(url, json=payload)
@@ -39,10 +44,10 @@ def post(url, payload):
         print("Error:", r.text)
         return None
 
-print(f"=== Creating Hospitals ({COUNT}) ===")
-for _ in range(COUNT):
+print(f"=== Creating Hospitals ({HOSPITAL_COUNT}) ===")
+for i in range(HOSPITAL_COUNT):
     payload = {
-        "name": f"Hospital {_}",
+        "name": f"Hospital {i}",
         "city": "CityX",
         "state": "StateY",
         "phone": "555-555-5555",
@@ -53,10 +58,10 @@ for _ in range(COUNT):
         hospital_ids.append(result["id"])
 
 print(f"=== Creating Recipients ({COUNT}) ===")
-for _ in range(COUNT):
+for i in range(COUNT):
     hid = random.choice(hospital_ids)
     payload = {
-        "full_name": f"Recipient {_}",
+        "full_name": f"Recipient {i}",
         "dob": rand_date(),
         "blood_type": rand_bt(),
         "status": "active",
@@ -67,7 +72,7 @@ for _ in range(COUNT):
         recipient_ids.append(result["id"])
 
 print(f"=== Creating Needs ({COUNT}) ===")
-for _ in range(COUNT):
+for i in range(COUNT):
     rid = random.choice(recipient_ids)
     payload = {
         "recipient_id": rid,
@@ -79,9 +84,9 @@ for _ in range(COUNT):
     post(f"{BASE}/needs", payload)
 
 print(f"=== Creating Donors ({COUNT}) ===")
-for _ in range(COUNT):
+for i in range(COUNT):
     payload = {
-        "full_name": f"Donor {_}",
+        "full_name": f"Donor {i}",
         "dob": rand_date(),
         "blood_type": rand_bt(),
         "status": "active",
@@ -91,7 +96,7 @@ for _ in range(COUNT):
         donor_ids.append(result["id"])
 
 print(f"=== Creating Organs ({COUNT}) ===")
-for _ in range(COUNT):
+for i in range(COUNT):
     did = random.choice(donor_ids)
     payload = {
         "organ_type": rand_organ(),
@@ -102,7 +107,7 @@ for _ in range(COUNT):
     post(f"{BASE}/organs", payload)
 
 print(f"=== Creating Consents ({COUNT}) ===")
-for _ in range(COUNT):
+for i in range(COUNT):
     did = random.choice(donor_ids)
     payload = {
         "donor_id": did,

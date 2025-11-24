@@ -209,7 +209,7 @@ def aggregate_full_snapshot():
 @app.post("/match/do-match")
 def run_matching():
     """
-    Perform donor-organ ↔ recipient-need matching:
+    Perform donor-organ - recipient-need matching:
     - Fetch organs from MS1
     - Fetch needs from MS2
     - Match based on organ_type
