@@ -8,20 +8,20 @@ from openapi_server.db.connection import get_connection
 
 class Matcher:
     """
-    Performs donor-organ ↔ recipient-need matching via the composite API,
-    applies compatibility rules, deletes consumed resources, and
-    saves match results to the SQL database.
+    Performs donor-organ ↔ recipient-need matching via composite API,
+    with organ-type + blood-type compatibility, deletion of consumed
+    records in MS1/MS2, and saving match results to SQL database.
     """
 
     def __init__(self, ms1_base_url: str, ms2_base_url: str):
         self.ms1 = MS1Client(ms1_base_url)
         self.ms2 = MS2Client(ms2_base_url)
 
-    # -----------------------------------------
-    # BLOOD TYPE COMPATIBILITY
-    # -----------------------------------------
+    # ---------------------------------------------------------
+    # BLOOD TYPE COMPATIBILITY RULES
+    # ---------------------------------------------------------
     def is_compatible(self, donor_bt: str, recipient_bt: str) -> bool:
-        """Compatibility logic for organ transplantation."""
+        """Determine blood-type compatibility."""
 
         d = donor_bt.replace("+", "").replace("-", "")
         r = recipient_bt.replace("+", "").replace("-", "")
@@ -30,16 +30,20 @@ class Matcher:
             "O": ["O", "A", "B", "AB"],
             "A": ["A", "AB"],
             "B": ["B", "AB"],
-            "AB": ["AB"]
+            "AB": ["AB"],
         }
+
+        # If unknown type, reject match
+        if d not in rules:
+            return False
 
         return r in rules[d]
 
-    # -----------------------------------------
-    # SAVE MATCH TO DATABASE
-    # -----------------------------------------
+    # ---------------------------------------------------------
+    # SAVE MATCH INTO SQL DB
+    # ---------------------------------------------------------
     def save_to_db(self, match: Dict):
-        """Insert match record into SQL database."""
+        """Write a match record into MySQL matches table."""
         conn = get_connection()
         cur = conn.cursor()
 
@@ -66,28 +70,40 @@ class Matcher:
         cur.close()
         conn.close()
 
-    # -----------------------------------------
+    # ---------------------------------------------------------
     # MATCHING LOGIC
-    # -----------------------------------------
+    # ---------------------------------------------------------
     def match_and_consume(self) -> List[Dict]:
         """
-        - Fetch organs and needs
-        - Match based on organ type + blood type
-        - Insert match into DB
-        - Delete used organ + need from MS1/MS2
-        - Return match list
+        Steps:
+        1. Fetch organs + needs from MS1/MS2
+        2. unwrap organ["data"] (actual MS response structure)
+        3. match on organ_type + blood-type compatibility
+        4. save match to SQL DB
+        5. delete organ + need from MS1/MS2
+        6. return list of match results
         """
 
-        organs = self.ms1.list_organs()
+        organs_raw = self.ms1.list_organs()  # list of {"data": {...}}
         needs = self.ms2.list_needs()
 
-        results = []
+        results: List[Dict] = []
 
-        for organ in organs:
-            organ_type = organ["type"]
-            donor_bt = organ["blood_type"]
+        for organ in organs_raw:
 
-            # Match same organ type AND compatible blood type
+            # ---- FIX: unwrap MS1 structure ----
+            if "data" not in organ:
+                # Unexpected shape — skip
+                continue
+
+            o = organ["data"]
+
+            organ_type = o["organ_type"]
+            donor_bt = o.get("blood_type", "O+")     # fallback if unset
+            donor_id = o["donor_id"]
+            organ_id = o["id"]
+
+            # ---- find compatible need ----
             need = next((
                 n for n in needs
                 if n["organ_type"] == organ_type
@@ -97,31 +113,35 @@ class Matcher:
             if not need:
                 continue
 
-            # Build match record
+            # ---- build match object ----
             match_entry = {
-                "donor_id": organ["donor_id"],
-                "organ_id": organ["id"],
+                "donor_id": donor_id,
+                "organ_id": organ_id,
                 "recipient_id": need["recipient_id"],
                 "donor_blood_type": donor_bt,
                 "recipient_blood_type": need["blood_type"],
                 "organ_type": organ_type,
                 "score": 1.0,
-                "status": "matched",  # NEW STATUS
+                "status": "matched",
             }
 
-            results.append(match_entry)
-
-            # Save match to DB
+            # Save → MySQL
             self.save_to_db(match_entry)
 
-            # Delete organ + need from microservices
-            self.ms1.delete_organ(organ["id"])
+            # Append to API response
+            results.append(match_entry)
+
+            # Delete consumed organ + need from MS1/MS2
+            self.ms1.delete_organ(organ_id)
             self.ms2.delete_need(need["id"])
 
-            # Remove from in-memory list
+            # Remove from in-memory list to avoid duplicate match
             needs = [n for n in needs if n["id"] != need["id"]]
 
         return results
 
+    # ---------------------------------------------------------
+    # OPTIONAL: Pagination Helper
+    # ---------------------------------------------------------
     def paginate(self, items: List[Dict], limit: int, offset: int) -> List[Dict]:
         return items[offset: offset + limit]
