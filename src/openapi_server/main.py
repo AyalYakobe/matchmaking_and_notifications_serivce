@@ -226,7 +226,7 @@ def run_matching():
 # ===============================================================
 # 10. VIEW ALL MATCHES (NEW ENDPOINT)
 # ===============================================================
-@app.get("/matches")
+@app.get("/internal/matches")
 def list_matches():
     conn = get_connection()
     cur = conn.cursor(dictionary=True)
@@ -235,3 +235,4 @@ def list_matches():
     cur.close()
     conn.close()
     return rows
+
