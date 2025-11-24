@@ -28,7 +28,7 @@ from openapi_server.clients.ms1_client import MS1Client
 from openapi_server.clients.ms2_client import MS2Client
 
 # Matcher service (business logic)
-from openapi_server.services.matche_service import Matcher
+from openapi_server.services.matcher_service import Matcher
 
 # OffersService (DB-backed REST API)
 from openapi_server.services.offers_service import router as OffersRouter

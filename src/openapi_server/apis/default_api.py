@@ -8,7 +8,8 @@ from openapi_server.models.health_post_request import HealthPostRequest
 from openapi_server.models.health_put_request import HealthPutRequest
 from openapi_server.models.match import Match
 from openapi_server.models.offer import Offer
-from openapi_server.impl.jobs_service import start_job, get_job_status
+from openapi_server.services.jobs_service import start_job, get_job_status
+
 
 router = APIRouter()
 
