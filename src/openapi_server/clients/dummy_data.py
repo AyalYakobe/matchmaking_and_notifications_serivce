@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Bulk Data Seeder for MS1 + MS2 via Composite API
-WITH FULL DEBUG LOGGING
+Uses ONLY legal POST routes based on OpenAPI
 """
 
 import requests
@@ -13,9 +13,9 @@ BASE = "https://composite-service-730071231868.us-central1.run.app"
 HOSPITAL_COUNT = 4
 COUNT = 50
 
-# ------------------------------------------------------------------------------
-# HELPERS
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def rand_date():
     return (datetime.utcnow() - timedelta(days=random.randint(0, 2000))).strftime("%Y-%m-%d")
@@ -29,20 +29,9 @@ def rand_bt():
 def rand_organ():
     return random.choice(["kidney", "heart", "liver", "lung"])
 
-# BLOOD TYPE MATCHING HELPERS
-compatible_map = {
-    "O": ["O", "A", "B", "AB"],
-    "A": ["A", "AB"],
-    "B": ["B", "AB"],
-    "AB": ["AB"]
-}
-
-def base_type(bt):
-    return bt.replace("+", "").replace("-", "")
-
-# ------------------------------------------------------------------------------
-# POST WITH FULL DEBUGGING
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Debug POST helper
+# ---------------------------------------------------------------------------
 
 def post_debug(url, payload):
     print("\n---------------------------------------")
@@ -57,31 +46,31 @@ def post_debug(url, payload):
 
     print(f"Status: {r.status_code}")
 
-    # Print error content
     if r.status_code >= 300:
         print("❌ ERROR BODY:", r.text)
         return None
 
-    # Try to parse JSON
     try:
         data = r.json()
         print("Response JSON:", data)
         return data
-    except Exception:
+    except:
         print("❌ JSON PARSE ERROR:", r.text)
         return None
 
-# ------------------------------------------------------------------------------
-# STORAGE
-# ------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Storage
+# ---------------------------------------------------------------------------
 
 hospital_ids = []
 recipient_ids = []
 donor_ids = []
 
-# ------------------------------------------------------------------------------
-# EXECUTION
-# ------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Execution
+# ---------------------------------------------------------------------------
 
 print(f"\n=== Creating Hospitals ({HOSPITAL_COUNT}) ===")
 for i in range(HOSPITAL_COUNT):
@@ -90,10 +79,11 @@ for i in range(HOSPITAL_COUNT):
         "city": "CityX",
         "state": "StateY",
         "phone": "555-555-5555",
-        "status": "active",
+        "status": "active"
     })
     if result and "id" in result:
         hospital_ids.append(result["id"])
+
 
 print(f"\n=== Creating Recipients ({COUNT}) ===")
 recipient_btypes = []
@@ -106,29 +96,25 @@ for i in range(COUNT):
         "dob": rand_date(),
         "blood_type": b,
         "status": "active",
-        "primary_hospital_id": random.choice(hospital_ids),
+        "primary_hospital_id": random.choice(hospital_ids)
     })
     if result and "id" in result:
         recipient_ids.append(result["id"])
 
-print(f"\n=== Creating Needs ({COUNT}) ===")
+
+print(f"\n=== Creating Needs ({COUNT}) via /recipients/<id>/needs ===")
 for i in range(COUNT):
     rid = recipient_ids[i]
 
-    if i < COUNT // 2:
-        organ_type = "kidney"
-        blood_type = recipient_btypes[i]
-    else:
-        organ_type = random.choice(["heart", "liver", "lung"])
-        blood_type = rand_bt()
+    organ_type = "kidney" if i < COUNT // 2 else rand_organ()
 
-    post_debug(f"{BASE}/needs", {
-        "recipient_id": rid,
+    post_debug(f"{BASE}/recipients/{rid}/needs", {
         "organ_type": organ_type,
         "urgency": random.randint(1, 5),
-        "blood_type": blood_type,
-        "status": "waiting",
+        "blood_type": recipient_btypes[i],
+        "status": "waiting"
     })
+
 
 print(f"\n=== Creating Donors ({COUNT}) ===")
 donor_btypes = []
@@ -142,30 +128,32 @@ for i in range(COUNT):
         "full_name": f"Donor {i}",
         "dob": rand_date(),
         "blood_type": donor_btypes[i],
-        "status": "active",
+        "status": "active"
     })
     if result and "id" in result:
         donor_ids.append(result["id"])
 
-print(f"\n=== Creating Organs ({COUNT}) ===")
+
+print(f"\n=== Creating Organs ({COUNT}) via /donors/<id>/organs ===")
 for i in range(COUNT):
     did = donor_ids[i]
     organ_type = "kidney" if i < COUNT // 2 else rand_organ()
 
-    post_debug(f"{BASE}/organs", {
+    post_debug(f"{BASE}/donors/{did}/organs", {
         "organ_type": organ_type,
         "condition": "good",
-        "retrieved_at": rand_ts(),
-        "donor_id": did,
+        "retrieved_at": rand_ts()
     })
 
-print(f"\n=== Creating Consents ({COUNT}) ===")
+
+print(f"\n=== Creating Consents ({COUNT}) via /donors/<id>/consents ===")
 for i in range(COUNT):
     did = donor_ids[i]
-    post_debug(f"{BASE}/consents", {
-        "donor_id": did,
+
+    post_debug(f"{BASE}/donors/{did}/consents", {
         "scope": [rand_organ()],
-        "status": "signed",
+        "status": "signed"
     })
+
 
 print("\n=== DONE ===\n")
