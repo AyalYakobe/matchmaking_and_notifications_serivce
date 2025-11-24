@@ -33,13 +33,13 @@ def post_debug(url, payload):
     try:
         r = requests.post(url, json=payload)
     except Exception as e:
-        print("❌ REQUEST FAILED:", e)
+        print("REQUEST FAILED:", e)
         return None
 
     print(f"Status: {r.status_code}")
 
     if r.status_code >= 300:
-        print("❌ ERROR BODY:", r.text)
+        print("ERROR BODY:", r.text)
         return None
 
     try:
@@ -47,7 +47,7 @@ def post_debug(url, payload):
         print("Response JSON:", data)
         return data
     except:
-        print("❌ JSON PARSE ERROR:", r.text)
+        print("JSON PARSE ERROR:", r.text)
         return None
 
 

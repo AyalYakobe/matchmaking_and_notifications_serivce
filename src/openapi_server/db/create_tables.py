@@ -27,6 +27,21 @@ def create_tables():
     );
     """
 
+    # OFFERS TABLE — fully aligned with Offer model + offers_service + matcher
+    tables["offers"] = """
+    CREATE TABLE IF NOT EXISTS offers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+
+        match_id INT NOT NULL,
+        recipient_id VARCHAR(64),
+        status VARCHAR(20),
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+    """
+
+
     for name, ddl in tables.items():
         print(f"Creating table: {name} ...")
         cur.execute(ddl)
