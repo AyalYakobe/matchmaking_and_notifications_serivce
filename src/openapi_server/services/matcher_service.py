@@ -33,7 +33,6 @@ class Matcher:
             "AB": ["AB"],
         }
 
-        # If unknown type, reject match
         if d not in rules:
             return False
 
@@ -77,29 +76,26 @@ class Matcher:
         """
         Steps:
         1. Fetch organs + needs from MS1/MS2
-        2. unwrap organ["data"] (actual MS response structure)
+        2. unwrap organ data (Composite returns flat objects)
         3. match on organ_type + blood-type compatibility
         4. save match to SQL DB
         5. delete organ + need from MS1/MS2
         6. return list of match results
         """
 
-        organs_raw = self.ms1.list_organs()  # list of {"data": {...}}
+        organs_raw = self.ms1.list_organs()
         needs = self.ms2.list_needs()
 
         results: List[Dict] = []
 
         for organ in organs_raw:
 
-            # ---- FIX: unwrap MS1 structure ----
-            if "data" not in organ:
-                # Unexpected shape — skip
-                continue
+            # ---- FIXED: unwrap flat composite structure or {"data": {...}} ----
+            o = organ.get("data", organ)
 
-            o = organ["data"]
-
+            # Required fields
             organ_type = o["organ_type"]
-            donor_bt = o.get("blood_type", "O+")     # fallback if unset
+            donor_bt = o.get("blood_type", "O+")     # default if missing
             donor_id = o["donor_id"]
             organ_id = o["id"]
 
@@ -135,7 +131,7 @@ class Matcher:
             self.ms1.delete_organ(organ_id)
             self.ms2.delete_need(need["id"])
 
-            # Remove from in-memory list to avoid duplicate match
+            # Remove from in-memory list to avoid matching again
             needs = [n for n in needs if n["id"] != need["id"]]
 
         return results
