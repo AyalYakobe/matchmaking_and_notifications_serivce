@@ -168,3 +168,55 @@ for i in range(COUNT):
     })
 
 print("\n=== DONE ===\n")
+
+print("\n=== Creating Guaranteed Obvious Matches (10 pairs) ===")
+
+GUARANTEED_COUNT = 10
+guaranteed_donor_ids = []
+guaranteed_recipient_ids = []
+guaranteed_need_ids = []
+
+for i in range(GUARANTEED_COUNT):
+
+    # 1. Create a recipient with O+ blood (universal receiver for O)
+    r = post_debug(f"{BASE}/recipients", {
+        "full_name": f"Guaranteed Recipient {i}",
+        "dob": rand_date(),
+        "blood_type": "O+",
+        "status": "active",
+        "primary_hospital_id": random.choice(hospital_ids)
+    })
+    rid = r["id"]
+    guaranteed_recipient_ids.append(rid)
+
+    # 2. Create a need for kidney with O+ (guaranteed match for O donor)
+    n = post_debug(f"{BASE}/recipients/{rid}/needs", {
+        "organ_type": "kidney",
+        "urgency": 5,
+        "blood_type": "O+",
+        "status": "waiting"
+    })
+    guaranteed_need_ids.append(n["id"])
+
+    # 3. Create donor with O+ (universal donor)
+    d = post_debug(f"{BASE}/donors", {
+        "full_name": f"Guaranteed Donor {i}",
+        "dob": rand_date(),
+        "blood_type": "O+",
+        "status": "active"
+    })
+    did = d["id"]
+    guaranteed_donor_ids.append(did)
+
+    # 4. Create a kidney organ for that donor
+    post_debug(f"{BASE}/donors/{did}/organs", {
+        "organ_type": "kidney",
+        "condition": "perfect",
+        "retrieved_at": rand_ts()
+    })
+
+    # 5. Create consent for kidney
+    post_debug(f"{BASE}/donors/{did}/consents", {
+        "scope": ["kidney"],
+        "status": "granted"
+    })
