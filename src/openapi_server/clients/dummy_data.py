@@ -50,6 +50,7 @@ def post_debug(url, payload):
         print("❌ JSON PARSE ERROR:", r.text)
         return None
 
+
 hospital_ids = []
 recipient_ids = []
 donor_ids = []
@@ -91,7 +92,7 @@ for i in range(COUNT):
         recipient_ids.append(result["id"])
 
 # -----------------------------
-# NEEDS — 50% guaranteed matchable
+# NEEDS — 50% matchable
 # -----------------------------
 print(f"\n=== Creating Needs ({COUNT}) ===")
 
@@ -99,11 +100,9 @@ for i in range(COUNT):
     rid = recipient_ids[i]
 
     if i < COUNT // 2:
-        # guaranteed matchable needs
         organ_type = "kidney"
         blood_type = recipient_btypes[i]
     else:
-        # unmatchable variety
         organ_type = rand_organ()
         blood_type = rand_bt()
 
@@ -115,7 +114,7 @@ for i in range(COUNT):
     })
 
 # -----------------------------
-# DONORS — 50% guaranteed compatible
+# DONORS — 50% compatible
 # -----------------------------
 print(f"\n=== Creating Donors ({COUNT}) ===")
 
@@ -123,7 +122,6 @@ donor_btypes = []
 
 for i in range(COUNT):
     if i < COUNT // 2:
-        # donor is compatible with matching recipient
         bt = recipient_btypes[i]
     else:
         bt = rand_bt()
@@ -141,17 +139,14 @@ for i in range(COUNT):
         donor_ids.append(result["id"])
 
 # -----------------------------
-# ORGANS — 50% guaranteed matchable kidney organs
+# ORGANS — 50% guaranteed kidney
 # -----------------------------
 print(f"\n=== Creating Organs ({COUNT}) ===")
 
 for i in range(COUNT):
     did = donor_ids[i]
 
-    if i < COUNT // 2:
-        organ_type = "kidney"  # guaranteed
-    else:
-        organ_type = rand_organ()
+    organ_type = "kidney" if i < COUNT // 2 else rand_organ()
 
     post_debug(f"{BASE}/donors/{did}/organs", {
         "organ_type": organ_type,
@@ -160,7 +155,7 @@ for i in range(COUNT):
     })
 
 # -----------------------------
-# CONSENTS
+# CONSENTS — correct statuses
 # -----------------------------
 print(f"\n=== Creating Consents ({COUNT}) ===")
 
@@ -169,7 +164,7 @@ for i in range(COUNT):
 
     post_debug(f"{BASE}/donors/{did}/consents", {
         "scope": [rand_organ()],
-        "status": "signed"
+        "status": "granted"   # FIXED: valid enum
     })
 
 print("\n=== DONE ===\n")
