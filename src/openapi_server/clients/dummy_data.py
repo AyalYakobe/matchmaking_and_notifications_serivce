@@ -3,11 +3,11 @@
 """
 Bulk Data Seeder for MS1 + MS2 via Composite API
 - 4 hospitals
-- 1000 recipients
-- 1000 needs
-- 1000 donors
-- 1000 organs
-- 1000 consents
+- 50 recipients
+- 50 needs
+- 50 donors
+- 50 organs
+- 50 consents
 """
 
 import requests
@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 BASE = "https://composite-service-730071231868.us-central1.run.app"
 
 HOSPITAL_COUNT = 4
-COUNT = 1000   # for everything else
+COUNT = 50   # Everything else = 50
 
 # random helpers
 def rand_date():
