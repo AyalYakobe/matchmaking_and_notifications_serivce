@@ -151,7 +151,6 @@ class Matcher:
             # 3️Add to API response
             match_entry["match_id"] = match_id
             results.append(match_entry)
-
             # 4️Delete consumed organ + need
             self.ms1.delete_organ(organ_id)
             self.ms2.delete_need(need["id"])

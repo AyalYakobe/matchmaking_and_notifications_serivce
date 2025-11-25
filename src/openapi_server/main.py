@@ -236,3 +236,35 @@ def list_matches():
     conn.close()
     return rows
 
+@app.get("/matches/{match_id}")
+def get_match(match_id: int):
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("SELECT * FROM matches WHERE id = %s", (match_id,))
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if not row:
+        return {"error": f"Match {match_id} not found"}
+
+    return row
+
+
+@app.get("/offers/{offer_id}")
+def get_offer(offer_id: int):
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("SELECT * FROM offers WHERE id = %s", (offer_id,))
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if not row:
+        return {"error": f"Offer {offer_id} not found"}
+
+    return row
