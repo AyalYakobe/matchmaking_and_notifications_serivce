@@ -17,8 +17,8 @@ Entrypoint for the FastAPI microservice.
 import requests
 from fastapi import FastAPI
 
-# OpenAPI-generated default routes
-from openapi_server.apis.default_api import router as DefaultApiRouter
+# # OpenAPI-generated default routes
+# from openapi_server.apis.default_api import router as DefaultApiRouter
 
 # Internal DB
 from openapi_server.db.connection import get_connection
@@ -53,7 +53,7 @@ app = FastAPI(
 # ===============================================================
 # 2. AUTO-GENERATED OPENAPI ROUTES
 # ===============================================================
-app.include_router(DefaultApiRouter)
+# app.include_router(DefaultApiRouter)
 
 
 
