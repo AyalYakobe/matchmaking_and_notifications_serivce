@@ -17,9 +17,6 @@ Entrypoint for the FastAPI microservice.
 import requests
 from fastapi import FastAPI
 
-# # OpenAPI-generated default routes
-# from openapi_server.apis.default_api import router as DefaultApiRouter
-
 # Internal DB
 from openapi_server.db.connection import get_connection
 
@@ -47,21 +44,6 @@ app = FastAPI(
         "and providing a DB-backed Offers API."
     )
 )
-
-
-
-# ===============================================================
-# 2. AUTO-GENERATED OPENAPI ROUTES
-# ===============================================================
-# app.include_router(DefaultApiRouter)
-
-
-
-# ===============================================================
-# 3. CUSTOM SERVICES (Offers ONLY)
-# ===============================================================
-app.include_router(OffersRouter, tags=["Offers"])
-
 
 
 # ===============================================================
@@ -261,3 +243,8 @@ def get_full_match(match_id: int):
         "match": match,
         "offers": offers
     }
+
+# ===============================================================
+# 3. CUSTOM SERVICES (Offers ONLY)
+# ===============================================================
+app.include_router(OffersRouter, tags=["Offers"])

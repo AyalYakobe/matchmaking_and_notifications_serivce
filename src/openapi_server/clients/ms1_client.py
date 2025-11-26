@@ -28,17 +28,6 @@ class MS1Client:
         r.raise_for_status()
         return True
 
-    # ---------------------------------------------------------
-    # HAL → FLAT transformation
-    # MS1 returns:
-    # {
-    #   "items": [ { "data": {...}, "_links": {...} } ],
-    #   "count": 1,
-    #   "total": 1
-    # }
-    #
-    # We extract ONLY the "data" part.
-    # ---------------------------------------------------------
     def _flat(self, wrapper):
         if not isinstance(wrapper, dict):
             return []
