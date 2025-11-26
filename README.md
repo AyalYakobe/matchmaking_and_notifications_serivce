@@ -6,6 +6,12 @@ This service performs donor–recipient matching by integrating with two externa
 
 ## Overview
 
+## Public Service Endpoints
+
+- **Base API URL:** http://34.138.171.147:8000  
+- **Swagger UI:** http://34.138.171.147:8000/docs  
+- **ReDoc:** http://34.138.171.147:8000/redoc
+
 ### Passthrough API to MS1 (Donor Registry)
 Read-only passthrough endpoints for:
 - Donors
@@ -142,3 +148,7 @@ This project extends an OpenAPI-generated FastAPI server with custom capabilitie
 - Notification dispatch pipeline  
 - Async job orchestration  
 - Enhanced compatibility scoring  
+
+
+http://34.138.171.147:8000/docs
+http://34.138.171.147:8000

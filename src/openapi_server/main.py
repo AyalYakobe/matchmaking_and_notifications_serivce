@@ -60,7 +60,7 @@ app.include_router(DefaultApiRouter)
 # ===============================================================
 # 3. CUSTOM SERVICES (Offers ONLY)
 # ===============================================================
-app.include_router(OffersRouter, prefix="/offers", tags=["Offers"])
+app.include_router(OffersRouter, tags=["Offers"])
 
 
 
@@ -262,19 +262,21 @@ def get_full_match(match_id: int):
         "offers": offers
     }
 
+# # ===============================================================
+# # 11. VIEW ALL OFFERS
+# # ===============================================================
+# @app.get("/offers/{offer_id}")
+# def get_offer(offer_id: int):
+#     conn = get_connection()
+#     cur = conn.cursor(dictionary=True)
 
-@app.get("/offers/{offer_id}")
-def get_offer(offer_id: int):
-    conn = get_connection()
-    cur = conn.cursor(dictionary=True)
+#     cur.execute("SELECT * FROM offers WHERE id = %s", (offer_id,))
+#     row = cur.fetchone()
 
-    cur.execute("SELECT * FROM offers WHERE id = %s", (offer_id,))
-    row = cur.fetchone()
+#     cur.close()
+#     conn.close()
 
-    cur.close()
-    conn.close()
+#     if not row:
+#         return {"error": f"Offer {offer_id} not found"}
 
-    if not row:
-        return {"error": f"Offer {offer_id} not found"}
-
-    return row
+#     return row

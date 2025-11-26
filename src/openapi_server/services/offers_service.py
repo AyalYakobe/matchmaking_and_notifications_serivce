@@ -48,7 +48,7 @@ async def offers_get(limit: int = 10, offset: int = 0, response: Response = None
     cur.close()
     conn.close()
 
-    # Convert DB dicts → Offer Pydantic objects
+    # Convert DB dicts to Offer Pydantic objects
     return [Offer(**row) for row in rows]
 
 
