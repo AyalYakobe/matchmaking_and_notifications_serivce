@@ -4,6 +4,8 @@ from typing import List, Dict
 from openapi_server.clients.ms1_client import MS1Client
 from openapi_server.clients.ms2_client import MS2Client
 from openapi_server.db.connection import get_connection
+from openapi_server.clients.pubsub_client import publish_event
+
 
 
 class Matcher:
@@ -101,8 +103,9 @@ class Matcher:
         3. Match on organ_type + blood-type compatibility
         4. Save match to SQL (get match_id)
         5. Auto-create offer using match_id
-        6. Delete matched organ + need
-        7. Return list of matches
+        6. Publish Pub/Sub event (TRIGGERS CLOUD FUNCTION)
+        7. Delete matched organ + need
+        8. Return list of matches
         """
 
         organs_raw = self.ms1.list_organs()
@@ -142,20 +145,31 @@ class Matcher:
                 "status": "matched",
             }
 
-            # 1Save match to database and get match_id
+            # 1️ Save match to database and get match_id
             match_id = self.save_to_db(match_entry)
 
-            # 2Auto-create offer
+            # 2️ Auto-create offer
             self.create_offer(match_id, need["recipient_id"])
 
-            # 3️Add to API response
+            # 3️ Publish Pub/Sub event to trigger Cloud Function
+            publish_event({
+                "match_id": match_id,
+                "donor_id": donor_id,
+                "organ_id": organ_id,
+                "recipient_id": need["recipient_id"],
+                "organ_type": organ_type,
+                "message": "New donor-recipient match created"
+            })
+
+            # 4️ Add to API response
             match_entry["match_id"] = match_id
             results.append(match_entry)
-            # 4️Delete consumed organ + need
+
+            # 5️ Delete consumed organ + need
             self.ms1.delete_organ(organ_id)
             self.ms2.delete_need(need["id"])
 
-            # 5️Remove matched need from list to avoid duplicates
+            # 6️ Remove matched need from list to avoid duplicates
             needs = [n for n in needs if n["id"] != need["id"]]
 
         return results
