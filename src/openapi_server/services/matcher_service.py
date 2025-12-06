@@ -179,3 +179,34 @@ class Matcher:
     # ---------------------------------------------------------
     def paginate(self, items: List[Dict], limit: int, offset: int) -> List[Dict]:
         return items[offset: offset + limit]
+
+
+def list_matches():
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM matches ORDER BY created_at DESC")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+
+def get_full_match(match_id: int):
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("SELECT * FROM matches WHERE id = %s", (match_id,))
+    match = cur.fetchone()
+
+    if not match:
+        cur.close()
+        conn.close()
+        return None
+
+    cur.execute("SELECT * FROM offers WHERE match_id = %s", (match_id,))
+    offers = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return {"match": match, "offers": offers}
