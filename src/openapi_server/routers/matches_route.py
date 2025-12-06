@@ -9,7 +9,6 @@ from openapi_server.services.matcher_service import (
 
 router = APIRouter()
 
-
 # ===============================================================
 # GET /internal/matches
 # ===============================================================
