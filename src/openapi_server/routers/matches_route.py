@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 
-from openapi_server.services.matches_service import (
+from openapi_server.services.matcher_service import (
     list_matches as svc_list_matches,
     get_full_match as svc_get_full_match,
 )
