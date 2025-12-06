@@ -3,8 +3,10 @@
 from fastapi import APIRouter, Response
 from openapi_server.models.offer import Offer
 
-from services.offers_service import get_offers, create_offer
-
+from openapi_server.services.offers_service import (
+    get_offers,
+    create_offer,
+)
 
 router = APIRouter()
 
