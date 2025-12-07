@@ -31,6 +31,18 @@ app = FastAPI(
 )
 
 # ===============================================================
+# INITIALIZE MATCHER (THIS WAS MISSING)
+# ===============================================================
+
+COMPOSITE_BASE = "https://composite-service-730071231868.us-central1.run.app"
+
+matcher = Matcher(
+    ms1_base_url=COMPOSITE_BASE,
+    ms2_base_url=COMPOSITE_BASE
+)
+
+
+# ===============================================================
 # HEALTH CHECK
 # ===============================================================
 @app.get("/db-test-c", tags=["Health"])

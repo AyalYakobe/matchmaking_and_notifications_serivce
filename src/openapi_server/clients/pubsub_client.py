@@ -11,4 +11,4 @@ topic_path = publisher.topic_path(PROJECT_ID, TOPIC)
 def publish_event(payload: dict):
     data = json.dumps(payload).encode("utf-8")
     future = publisher.publish(topic_path, data)
-    print("📤 Published event ID:", future.result())
+    print("Published event ID:", future.result())
