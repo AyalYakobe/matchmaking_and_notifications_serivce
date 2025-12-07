@@ -6,6 +6,37 @@ from openapi_server.clients.pubsub_client import publish_event
 from openapi_server.models.match import Match, MatchCreate, MatchUpdate
 
 
+# ---------------------------------------------------------
+# Helper: snake_case DB row → camelCase API dict
+# ---------------------------------------------------------
+def convert_match(row: Dict) -> Dict:
+    return {
+        "id": row["id"],
+        "donorId": row["donor_id"],
+        "organId": row["organ_id"],
+        "recipientId": row["recipient_id"],
+        "donorBloodType": row["donor_blood_type"],
+        "recipientBloodType": row["recipient_blood_type"],
+        "organType": row["organ_type"],
+        "score": row["score"],
+        "status": row["status"],
+    }
+
+
+def convert_offer(row: Dict) -> Dict:
+    return {
+        "id": str(row["id"]),
+        "matchId": str(row["match_id"]),
+        "recipientId": row.get("recipient_id"),
+        "status": row["status"],
+        "createdAt": row["created_at"].isoformat() if row["created_at"] else None,
+        "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else None,
+    }
+
+
+# ==========================================================
+# MATCHMAKER LOGIC
+# ==========================================================
 class Matcher:
     """
     Performs donor-organ ↔ recipient matching and persistence.
@@ -135,9 +166,9 @@ class Matcher:
         return results
 
 
-    # ==========================================================
-    # =============== CRUD FUNCTIONS FOR API ===================
-    # ==========================================================
+# ==========================================================
+# CRUD FUNCTIONS FOR MATCH API
+# ==========================================================
 
 def list_matches():
     conn = get_connection()
@@ -147,21 +178,7 @@ def list_matches():
     cur.close()
     conn.close()
 
-    def convert(row):
-        return {
-            "id": row["id"],
-            "donorId": row["donor_id"],
-            "organId": row["organ_id"],
-            "recipientId": row["recipient_id"],
-            "donorBloodType": row["donor_blood_type"],
-            "recipientBloodType": row["recipient_blood_type"],
-            "organType": row["organ_type"],
-            "score": row["score"],
-            "status": row["status"],
-        }
-
-    return [convert(r) for r in rows]
-
+    return [convert_match(r) for r in rows]
 
 
 def get_match(match_id: int) -> Optional[Dict]:
@@ -171,7 +188,11 @@ def get_match(match_id: int) -> Optional[Dict]:
     row = cur.fetchone()
     cur.close()
     conn.close()
-    return row
+
+    if not row:
+        return None
+
+    return convert_match(row)
 
 
 def create_match(payload: MatchCreate) -> Dict:
@@ -196,22 +217,38 @@ def create_match(payload: MatchCreate) -> Dict:
 
     match_id = cur.lastrowid
     conn.commit()
-
     cur.close()
     conn.close()
+
     return get_match(match_id)
 
 
 def update_match(match_id: int, payload: MatchUpdate) -> Optional[Dict]:
     updates = payload.model_dump(exclude_none=True, by_alias=True)
+
     if not updates:
         return get_match(match_id)
 
-    set_clause = ", ".join([f"{key}=%s" for key in updates.keys()])
-    values = list(updates.values())
+    # Map camelCase → snake_case
+    column_map = {
+        "donorId": "donor_id",
+        "organId": "organ_id",
+        "recipientId": "recipient_id",
+        "donorBloodType": "donor_blood_type",
+        "recipientBloodType": "recipient_blood_type",
+        "organType": "organ_type",
+        "score": "score",
+        "status": "status",
+    }
+
+    snake_updates = {column_map[k]: v for k, v in updates.items()}
+
+    set_clause = ", ".join([f"{col}=%s" for col in snake_updates])
+    values = list(snake_updates.values())
 
     conn = get_connection()
     cur = conn.cursor()
+
     sql = f"UPDATE matches SET {set_clause} WHERE id = %s"
     cur.execute(sql, (*values, match_id))
     conn.commit()
@@ -250,4 +287,7 @@ def get_full_match(match_id: int):
     cur.close()
     conn.close()
 
-    return {"match": match, "offers": offers}
+    return {
+        "match": convert_match(match),
+        "offers": [convert_offer(o) for o in offers]
+    }
