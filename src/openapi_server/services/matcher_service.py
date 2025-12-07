@@ -6,10 +6,13 @@ from openapi_server.clients.pubsub_client import publish_event
 from openapi_server.models.match import Match, MatchCreate, MatchUpdate
 
 
-# ---------------------------------------------------------
-# Helper: snake_case DB row → camelCase API dict
-# ---------------------------------------------------------
-def convert_match(row: Dict) -> Dict:
+# ===============================================================
+# INTERNAL HELPER — Convert DB row → API Match format
+# ===============================================================
+def _convert_match_row(row: Dict) -> Optional[Dict]:
+    if not row:
+        return None
+
     return {
         "id": row["id"],
         "donorId": row["donor_id"],
@@ -23,20 +26,6 @@ def convert_match(row: Dict) -> Dict:
     }
 
 
-def convert_offer(row: Dict) -> Dict:
-    return {
-        "id": str(row["id"]),
-        "matchId": str(row["match_id"]),
-        "recipientId": row.get("recipient_id"),
-        "status": row["status"],
-        "createdAt": row["created_at"].isoformat() if row["created_at"] else None,
-        "updatedAt": row["updated_at"].isoformat() if row["updated_at"] else None,
-    }
-
-
-# ==========================================================
-# MATCHMAKER LOGIC
-# ==========================================================
 class Matcher:
     """
     Performs donor-organ ↔ recipient matching and persistence.
@@ -61,7 +50,7 @@ class Matcher:
         return d in rules and r in rules[d]
 
     # ---------------------------------------------------------
-    # SQL INSERT
+    # SQL INSERT FOR AUTOMATED MATCHING
     # ---------------------------------------------------------
     def save_to_db(self, match: Dict) -> int:
         conn = get_connection()
@@ -167,7 +156,7 @@ class Matcher:
 
 
 # ==========================================================
-# CRUD FUNCTIONS FOR MATCH API
+# =============== CRUD FUNCTIONS FOR API ===================
 # ==========================================================
 
 def list_matches():
@@ -178,7 +167,7 @@ def list_matches():
     cur.close()
     conn.close()
 
-    return [convert_match(r) for r in rows]
+    return [_convert_match_row(r) for r in rows]
 
 
 def get_match(match_id: int) -> Optional[Dict]:
@@ -189,10 +178,7 @@ def get_match(match_id: int) -> Optional[Dict]:
     cur.close()
     conn.close()
 
-    if not row:
-        return None
-
-    return convert_match(row)
+    return _convert_match_row(row)
 
 
 def create_match(payload: MatchCreate) -> Dict:
@@ -225,32 +211,18 @@ def create_match(payload: MatchCreate) -> Dict:
 
 def update_match(match_id: int, payload: MatchUpdate) -> Optional[Dict]:
     updates = payload.model_dump(exclude_none=True, by_alias=True)
-
     if not updates:
         return get_match(match_id)
 
-    # Map camelCase → snake_case
-    column_map = {
-        "donorId": "donor_id",
-        "organId": "organ_id",
-        "recipientId": "recipient_id",
-        "donorBloodType": "donor_blood_type",
-        "recipientBloodType": "recipient_blood_type",
-        "organType": "organ_type",
-        "score": "score",
-        "status": "status",
-    }
-
-    snake_updates = {column_map[k]: v for k, v in updates.items()}
-
-    set_clause = ", ".join([f"{col}=%s" for col in snake_updates])
-    values = list(snake_updates.values())
+    set_clause = ", ".join([f"{key}=%s" for key in updates.keys()])
+    values = list(updates.values())
 
     conn = get_connection()
     cur = conn.cursor()
 
     sql = f"UPDATE matches SET {set_clause} WHERE id = %s"
     cur.execute(sql, (*values, match_id))
+
     conn.commit()
     cur.close()
     conn.close()
@@ -281,13 +253,12 @@ def get_full_match(match_id: int):
         conn.close()
         return None
 
+    match = _convert_match_row(match)
+
     cur.execute("SELECT * FROM offers WHERE match_id = %s", (match_id,))
     offers = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    return {
-        "match": convert_match(match),
-        "offers": [convert_offer(o) for o in offers]
-    }
+    return {"match": match, "offers": offers}
