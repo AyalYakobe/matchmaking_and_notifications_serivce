@@ -1,3 +1,5 @@
+# src/openapi_server/routers/offers_route.py
+
 from fastapi import APIRouter, Response, HTTPException
 from typing import List
 
@@ -12,10 +14,11 @@ from openapi_server.services.offers_service import (
 
 router = APIRouter()
 
+
 # ---------------------------------------------------------
 # GET /offers  (ETag + pagination)
 # ---------------------------------------------------------
-@router.get("/offers", response_model=List[Offer])
+@router.get("/offers", response_model=List[Offer], tags=["Offers"])
 async def offers_get(limit: int = 10, offset: int = 0, response: Response = None):
 
     offers, etag = await get_offers(limit, offset)
@@ -24,7 +27,7 @@ async def offers_get(limit: int = 10, offset: int = 0, response: Response = None
     if etag:
         response.headers["ETag"] = etag
 
-    # Pagination header
+    # Pagination Link header (relative path)
     response.headers["Link"] = (
         f'</offers?limit={limit}&offset={offset + limit}>; rel="next"'
     )
@@ -35,13 +38,23 @@ async def offers_get(limit: int = 10, offset: int = 0, response: Response = None
 # ---------------------------------------------------------
 # POST /offers  (201 Created + Location header)
 # ---------------------------------------------------------
-@router.post("/offers", response_model=Offer, status_code=201)
+@router.post(
+    "/offers",
+    response_model=Offer,
+    status_code=201,
+    response_model_exclude_unset=True,
+    tags=["Offers"]
+)
 async def offers_post(offer: OfferCreate, response: Response):
 
     new_offer = await create_offer(offer)
 
-    # REST: Created → include Location header
-    response.headers["Location"] = f"/offers/{new_offer.id}"
+    # REST: 201 Created → include Location header pointing to the *new resource*
+    resource_path = f"/offers/{new_offer.id}"
+    response.headers["Location"] = resource_path
+
+    # Optional but recommended by some REST guidelines
+    response.headers["Content-Location"] = resource_path
 
     return new_offer
 
@@ -49,7 +62,7 @@ async def offers_post(offer: OfferCreate, response: Response):
 # ---------------------------------------------------------
 # GET /offers/{offer_id}
 # ---------------------------------------------------------
-@router.get("/offers/{offer_id}", response_model=Offer)
+@router.get("/offers/{offer_id}", response_model=Offer, tags=["Offers"])
 async def offers_get_one(offer_id: int):
 
     offer = await get_offer(offer_id)
@@ -63,8 +76,8 @@ async def offers_get_one(offer_id: int):
 # ---------------------------------------------------------
 # PUT/PATCH /offers/{offer_id}
 # ---------------------------------------------------------
-@router.put("/offers/{offer_id}", response_model=Offer)
-@router.patch("/offers/{offer_id}", response_model=Offer)
+@router.put("/offers/{offer_id}", response_model=Offer, tags=["Offers"])
+@router.patch("/offers/{offer_id}", response_model=Offer, tags=["Offers"])
 async def offers_update(offer_id: int, payload: OfferUpdate):
 
     updated = await update_offer(offer_id, payload)
@@ -78,7 +91,7 @@ async def offers_update(offer_id: int, payload: OfferUpdate):
 # ---------------------------------------------------------
 # DELETE /offers/{offer_id}
 # ---------------------------------------------------------
-@router.delete("/offers/{offer_id}", status_code=204)
+@router.delete("/offers/{offer_id}", status_code=204, tags=["Offers"])
 async def offers_delete(offer_id: int):
 
     ok = await delete_offer(offer_id)
