@@ -10,7 +10,7 @@ AND m1.id > m2.id;
 
 
 -- =====================================================
--- Add UNIQUE constraint to MATCHES safely
+-- Add UNIQUE constraint to MATCHES (safe)
 -- =====================================================
 
 SET @exists := (
@@ -18,14 +18,13 @@ SET @exists := (
     FROM information_schema.table_constraints
     WHERE table_name = 'matches'
       AND constraint_name = 'unique_match_pair'
+      AND table_schema = DATABASE()
 );
 
--- Only add constraint if NOT already present
 SET @sql := IF(@exists = 0,
     'ALTER TABLE matches ADD CONSTRAINT unique_match_pair UNIQUE (donor_id, recipient_id);',
-    'SELECT "unique_match_pair already exists"'
+    'SELECT "unique_match_pair already exists";'
 );
-
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
@@ -42,7 +41,7 @@ AND o1.id > o2.id;
 
 
 -- =====================================================
--- Add UNIQUE constraint to OFFERS safely
+-- Add UNIQUE constraint to OFFERS (safe)
 -- =====================================================
 
 SET @exists := (
@@ -50,27 +49,79 @@ SET @exists := (
     FROM information_schema.table_constraints
     WHERE table_name = 'offers'
       AND constraint_name = 'unique_offer_per_match'
+      AND table_schema = DATABASE()
 );
 
 SET @sql := IF(@exists = 0,
     'ALTER TABLE offers ADD CONSTRAINT unique_offer_per_match UNIQUE (match_id);',
-    'SELECT "unique_offer_per_match already exists"'
+    'SELECT "unique_offer_per_match already exists";'
 );
-
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
 -- =====================================================
--- Indexes for performance (MySQL-compatible)
+-- Create MATCHES indexes (safe)
 -- =====================================================
 
-DROP INDEX IF EXISTS idx_matches_donor ON matches;
+-- Drop index idx_matches_donor if exists
+SET @exists := (
+    SELECT COUNT(*)
+    FROM information_schema.statistics
+    WHERE table_name = 'matches'
+      AND index_name = 'idx_matches_donor'
+      AND table_schema = DATABASE()
+);
+SET @sql := IF(@exists > 0,
+    'DROP INDEX idx_matches_donor ON matches;',
+    'SELECT "idx_matches_donor does not exist";'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 CREATE INDEX idx_matches_donor ON matches(donor_id);
 
-DROP INDEX IF EXISTS idx_matches_recipient ON matches;
+
+-- Drop index idx_matches_recipient if exists
+SET @exists := (
+    SELECT COUNT(*)
+    FROM information_schema.statistics
+    WHERE table_name = 'matches'
+      AND index_name = 'idx_matches_recipient'
+      AND table_schema = DATABASE()
+);
+SET @sql := IF(@exists > 0,
+    'DROP INDEX idx_matches_recipient ON matches;',
+    'SELECT "idx_matches_recipient does not exist";'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 CREATE INDEX idx_matches_recipient ON matches(recipient_id);
 
-DROP INDEX IF EXISTS idx_offers_match ON offers;
+
+-- =====================================================
+-- Create OFFERS indexes (safe)
+-- =====================================================
+
+SET @exists := (
+    SELECT COUNT(*)
+    FROM information_schema.statistics
+    WHERE table_name = 'offers'
+      AND index_name = 'idx_offers_match'
+      AND table_schema = DATABASE()
+);
+SET @sql := IF(@exists > 0,
+    'DROP INDEX idx_offers_match ON offers;',
+    'SELECT "idx_offers_match does not exist";'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 CREATE INDEX idx_offers_match ON offers(match_id);
+
+-- Done 
