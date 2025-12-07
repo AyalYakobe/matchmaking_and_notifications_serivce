@@ -1,26 +1,34 @@
 -- ============================================================
--- Migration 001: Create async_tasks table
--- For 202 Accepted asynchronous match processing
+-- Migration 2: Create async_tasks table (MySQL compatible)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS async_tasks (
     id VARCHAR(64) NOT NULL PRIMARY KEY,
-    
-    -- This references the match being processed asynchronously
     match_id INT NOT NULL,
-
-    -- Current state of async workload
     status VARCHAR(20) NOT NULL DEFAULT 'running',
-
-    -- JSON result payload (nullable until completed)
     result JSON NULL,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Helpful index if querying async tasks by match
-CREATE INDEX IF NOT EXISTS idx_async_tasks_match
-    ON async_tasks (match_id);
+-- MySQL does not support IF NOT EXISTS for indexes.
+-- So we create the index only if it is not already present.
 
+-- Check if index exists
+SET @idx_exists := (
+    SELECT COUNT(1)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+      AND table_name = 'async_tasks'
+      AND index_name = 'idx_async_tasks_match'
+);
+
+-- Conditionally create the index
+SET @sql := IF(@idx_exists = 0,
+               'CREATE INDEX idx_async_tasks_match ON async_tasks (match_id);',
+               'SELECT "Index already exists";');
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
