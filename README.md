@@ -7,8 +7,9 @@ Project ID: `matchmaking-services`
 Project Number: `549668844609`
 
 ## VM Information
-NAME                ZONE        MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP   STATUS
-fastapi-openapi-vm  us-east1-d  e2-medium                  10.142.0.2   34.26.41.192  RUNNING
+| Name               | Zone       | Machine Type | Preemptible | Internal IP | External IP  | Status  |
+|--------------------|------------|--------------|-------------|-------------|--------------|---------|
+| fastapi-openapi-vm | us-east1-d | e2-medium    | —           | 10.142.0.2  | 34.26.41.192 | RUNNING |
 
 ---
 
