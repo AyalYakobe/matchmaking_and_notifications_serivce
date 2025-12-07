@@ -2,6 +2,10 @@
 
 This service performs donor–recipient matching by integrating with two external microservices (MS1 and MS2) and by storing resulting offers and notifications in a SQL database. It extends an OpenAPI-generated FastAPI backend with custom business logic and additional DB-backed endpoints.
 
+The project is: `matchmaking-services   549668844609`
+The VM is:
+`NAME                ZONE        MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP   STATUS`
+`fastapi-openapi-vm  us-east1-d  e2-medium                  10.142.0.2   34.26.41.192  RUNNING`
 ---
 
 ## Overview
@@ -143,4 +147,5 @@ gcloud run deploy matchmaking-service \
   --set-env-vars DB_PASSWORD=SvcCpass1! \
   --set-env-vars DB_NAME=service_c_db \
   --set-env-vars DB_PORT=3306
+
 
