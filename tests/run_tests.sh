@@ -1,61 +1,69 @@
 #!/bin/bash
 
+BASE_URL="https://matchmaking-service-549668844609.us-central1.run.app"
+
 echo "==== DB TEST ===="
-curl -i http://localhost:8000/db-test-c
+curl -i $BASE_URL/db-test-c
 
 echo -e "
 ==== LIST MATCHES ===="
-curl -i http://localhost:8000/matches
+curl -i $BASE_URL/matches
 
 echo -e "
 ==== LIST OFFERS ===="
-curl -i http://localhost:8000/offers
+curl -i $BASE_URL/offers
 
 echo -e "
 ==== CREATE OFFER ===="
-curl -i -X POST http://localhost:8000/offers     -H "Content-Type: application/json"     -d '{
+curl -i -X POST $BASE_URL/offers \
+  -H "Content-Type: application/json" \
+  -d '{
         "matchId": "123",
         "recipientId": "abcde",
         "status": "pending"
-    }'
+      }'
 
 echo -e "
 ==== PAGINATION + ETAG ===="
-curl -i "http://localhost:8000/offers?limit=5&offset=0"
+curl -i "$BASE_URL/offers?limit=5&offset=0"
 
 echo -e "
 ==== TEST ETAG ===="
-etag=$(curl -sI http://localhost:8000/offers | grep ETag | awk '{print $2}')
+etag=$(curl -sI $BASE_URL/offers | grep -i ETag | awk '{print $2}' | tr -d '\r')
 echo "ETag: $etag"
-curl -i -H "If-None-Match: $etag" http://localhost:8000/offers
+curl -i -H "If-None-Match: $etag" $BASE_URL/offers
 
 echo -e "
 ==== TRIGGER MATCH ===="
-curl -i -X POST http://localhost:8000/do-match
+curl -i -X POST $BASE_URL/do-match
 
 echo -e "
 ==== DONORS (MS1) ===="
-curl -i http://localhost:8000/donors
+curl -i $BASE_URL/donors
 
 echo -e "
 ==== ORGANS (MS1) ===="
-curl -i http://localhost:8000/organs
+curl -i $BASE_URL/organs
 
 echo -e "
 ==== RECIPIENTS (MS2) ===="
-curl -i http://localhost:8000/recipients
+curl -i $BASE_URL/recipients
 
 echo -e "
 ==== NEEDS (MS2) ===="
-curl -i http://localhost:8000/needs
+curl -i $BASE_URL/needs
 
 echo -e "
 ==== TEST DUPLICATE MATCH INSERT ===="
-curl -i -X POST http://localhost:8000/matches     -H "Content-Type: application/json"     -d '{"donorId":"1","recipientId":"1"}'
+curl -i -X POST $BASE_URL/matches \
+  -H "Content-Type: application/json" \
+  -d '{"donorId":"1","recipientId":"1"}'
 
 echo -e "
 ==== TEST DUPLICATE OFFER INSERT ===="
-curl -i -X POST http://localhost:8000/offers     -H "Content-Type: application/json"     -d '{"matchId":"1","status":"pending"}'
+curl -i -X POST $BASE_URL/offers \
+  -H "Content-Type: application/json" \
+  -d '{"matchId":"1","status":"pending"}'
 
 echo -e "
 ==== DONE ===="
