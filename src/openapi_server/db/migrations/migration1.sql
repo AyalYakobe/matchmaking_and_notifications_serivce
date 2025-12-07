@@ -32,12 +32,19 @@ UNIQUE (match_id);
 
 
 -- =====================================================
--- Indexes for performance (optional but recommended)
+-- Indexes for performance (MySQL-compatible)
 -- =====================================================
 
-CREATE INDEX IF NOT EXISTS idx_matches_donor ON matches(donor_id);
-CREATE INDEX IF NOT EXISTS idx_matches_recipient ON matches(recipient_id);
+-- MATCHES indexes
+DROP INDEX IF EXISTS idx_matches_donor ON matches;
+CREATE INDEX idx_matches_donor ON matches(donor_id);
 
-CREATE INDEX IF NOT EXISTS idx_offers_match ON offers(match_id);
+DROP INDEX IF EXISTS idx_matches_recipient ON matches;
+CREATE INDEX idx_matches_recipient ON matches(recipient_id);
+
+-- OFFERS indexes
+DROP INDEX IF EXISTS idx_offers_match ON offers;
+CREATE INDEX idx_offers_match ON offers(match_id);
+
 
 -- Done 
