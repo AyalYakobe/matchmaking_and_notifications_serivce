@@ -20,6 +20,7 @@ Project Number: `549668844609`
 - **Base API URL:** http://34.138.171.147:8000  
 - **Swagger UI:** http://34.138.171.147:8000/docs
 - **ReDoc:** https://matchmaking-service-549668844609.us-central1.run.app/docs
+
 ### Passthrough API to MS1 (Donor Registry)
 
 Read-only passthrough endpoints for:
@@ -115,6 +116,14 @@ This migration:
   - idx_offers_match
 - Fully idempotent  
 - Compatible with Cloud SQL (MySQL 5.7/8.x)
+
+# Database Migration (migration1.sql)
+
+Located at:
+
+src/openapi_server/db/migrations/migration2.sql
+
+Migration 2 adds a persistent async_tasks table with indexes and foreign-key support to enable durable 202-Accepted asynchronous processing and task polling.
 
 ### Run Migration
 
