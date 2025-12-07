@@ -43,4 +43,3 @@ def get_async_task(task_id: str):
     cur.close()
     conn.close()
     return row
-s
