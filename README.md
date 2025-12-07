@@ -10,7 +10,7 @@ This service performs donor–recipient matching by integrating with two externa
 
 - **Base API URL:** http://34.138.171.147:8000  
 - **Swagger UI:** http://34.138.171.147:8000/docs  
-- **ReDoc:** http://34.138.171.147:8000/redoc
+- **ReDoc:** https://matchmaking-service-549668844609.us-central1.run.app/docs
 
 ### Passthrough API to MS1 (Donor Registry)
 
@@ -88,7 +88,7 @@ curl http://localhost:8000/db-test-c
 
 ---
 
-# 🔧 Database Migration (migration1.sql)
+# Database Migration (migration1.sql)
 
 Located at:
 
@@ -121,7 +121,7 @@ mysql -h 35.243.166.35 -u svc_c -p service_c_db -e "SHOW CREATE TABLE offers\G"
 
 ---
 
-# ▶️ Running the FastAPI Service
+# Running the FastAPI Service
 
 ### Install Dependencies
 pip3 install -r requirements.txt
@@ -131,16 +131,8 @@ PYTHONPATH=src uvicorn openapi_server.main:app --host 0.0.0.0 --port 8000
 
 Docs: http://localhost:8000/docs
 
----
 
-# 🧪 Running Tests
-
-pip3 install pytest
-PYTHONPATH=src pytest tests
-
----
-
-# ☁️ Deployment — Google Cloud Run
+# Deployment — Google Cloud Run
 
 gcloud run deploy matchmaking-service \
   --source . \
