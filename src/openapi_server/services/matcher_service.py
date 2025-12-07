@@ -3,7 +3,7 @@ from openapi_server.clients.ms1_client import MS1Client
 from openapi_server.clients.ms2_client import MS2Client
 from openapi_server.db.connection import get_connection
 from openapi_server.clients.pubsub_client import publish_event
-from openapi_server.models.match_model import Match, MatchCreate, MatchUpdate
+from openapi_server.models.match import Match, MatchCreate, MatchUpdate
 
 
 class Matcher:
