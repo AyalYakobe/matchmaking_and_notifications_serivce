@@ -49,7 +49,7 @@ async def offers_post(offer: OfferCreate, response: Response):
 
     new_offer = await create_offer(offer)
 
-    # REST: 201 Created → include Location header pointing to the *new resource*
+    # REST: 201 Created include Location header pointing to the *new resource*
     resource_path = f"/offers/{new_offer.id}"
     response.headers["Location"] = resource_path
 
