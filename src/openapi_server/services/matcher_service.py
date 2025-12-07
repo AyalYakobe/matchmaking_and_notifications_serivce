@@ -146,7 +146,22 @@ def list_matches():
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return rows
+
+    def convert(row):
+        return {
+            "id": row["id"],
+            "donorId": row["donor_id"],
+            "organId": row["organ_id"],
+            "recipientId": row["recipient_id"],
+            "donorBloodType": row["donor_blood_type"],
+            "recipientBloodType": row["recipient_blood_type"],
+            "organType": row["organ_type"],
+            "score": row["score"],
+            "status": row["status"],
+        }
+
+    return [convert(r) for r in rows]
+
 
 
 def get_match(match_id: int) -> Optional[Dict]:
