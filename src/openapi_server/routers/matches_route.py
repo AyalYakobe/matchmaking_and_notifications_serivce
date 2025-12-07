@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from openapi_server.models.match_model import Match, MatchCreate, MatchUpdate
+from openapi_server.models.match import Match, MatchCreate, MatchUpdate
 from openapi_server.services.matcher_service import (
     list_matches,
     create_match,
