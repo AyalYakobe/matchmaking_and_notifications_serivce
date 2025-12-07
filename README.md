@@ -18,9 +18,8 @@ Project Number: `549668844609`
 ### Public Service Endpoints
 
 - **Base API URL:** http://34.138.171.147:8000  
-- **Swagger UI:** http://34.138.171.147:8000/docs  
+- **Swagger UI:** http://34.138.171.147:8000/docs
 - **ReDoc:** https://matchmaking-service-549668844609.us-central1.run.app/docs
-
 ### Passthrough API to MS1 (Donor Registry)
 
 Read-only passthrough endpoints for:
