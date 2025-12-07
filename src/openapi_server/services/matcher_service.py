@@ -1,18 +1,14 @@
-# src/openapi_server/services/matcher.py
-
-from typing import List, Dict
+from typing import List, Dict, Optional
 from openapi_server.clients.ms1_client import MS1Client
 from openapi_server.clients.ms2_client import MS2Client
 from openapi_server.db.connection import get_connection
 from openapi_server.clients.pubsub_client import publish_event
-
+from openapi_server.models.match_model import Match, MatchCreate, MatchUpdate
 
 
 class Matcher:
     """
-    Performs donor-organ ↔ recipient-need matching via composite API,
-    with organ-type + blood-type compatibility, deletion of consumed
-    records in MS1/MS2, saving matches to SQL, and auto-creating offers.
+    Performs donor-organ ↔ recipient matching and persistence.
     """
 
     def __init__(self, ms1_base_url: str, ms2_base_url: str):
@@ -20,31 +16,23 @@ class Matcher:
         self.ms2 = MS2Client(ms2_base_url)
 
     # ---------------------------------------------------------
-    # BLOOD TYPE COMPATIBILITY RULES
+    # BLOOD COMPATIBILITY
     # ---------------------------------------------------------
     def is_compatible(self, donor_bt: str, recipient_bt: str) -> bool:
-        """Determine blood-type compatibility."""
-
         d = donor_bt.replace("+", "").replace("-", "")
         r = recipient_bt.replace("+", "").replace("-", "")
-
         rules = {
             "O": ["O", "A", "B", "AB"],
             "A": ["A", "AB"],
             "B": ["B", "AB"],
             "AB": ["AB"],
         }
-
-        if d not in rules:
-            return False
-
-        return r in rules[d]
+        return d in rules and r in rules[d]
 
     # ---------------------------------------------------------
-    # SAVE MATCH → SQL AND RETURN NEW match_id
+    # SQL INSERT
     # ---------------------------------------------------------
     def save_to_db(self, match: Dict) -> int:
-        """Write a match record into MySQL matches table and return inserted ID."""
         conn = get_connection()
         cur = conn.cursor()
 
@@ -71,14 +59,12 @@ class Matcher:
         conn.commit()
         cur.close()
         conn.close()
-
         return match_id
 
     # ---------------------------------------------------------
-    # CREATE OFFER AUTOMATICALLY
+    # CREATE OFFER
     # ---------------------------------------------------------
     def create_offer(self, match_id: int, recipient_id: str):
-        """Insert a new offer for a matched recipient."""
         conn = get_connection()
         cur = conn.cursor()
 
@@ -96,34 +82,17 @@ class Matcher:
     # MATCHING LOGIC
     # ---------------------------------------------------------
     def match_and_consume(self) -> List[Dict]:
-        """
-        Steps:
-        1. Fetch organs + needs from MS1/MS2
-        2. Unwrap organ data (Composite returns flat objects)
-        3. Match on organ_type + blood-type compatibility
-        4. Save match to SQL (get match_id)
-        5. Auto-create offer using match_id
-        6. Publish Pub/Sub event (TRIGGERS CLOUD FUNCTION)
-        7. Delete matched organ + need
-        8. Return list of matches
-        """
-
         organs_raw = self.ms1.list_organs()
         needs = self.ms2.list_needs()
-
         results: List[Dict] = []
 
         for organ in organs_raw:
-
-            # Composite returns flat JSON; older MS1 returned {"data": ...}
             o = organ.get("data", organ)
-
             organ_type = o["organ_type"]
             donor_bt = o.get("blood_type", "O+")
             donor_id = o["donor_id"]
             organ_id = o["id"]
 
-            # ---- find compatible need ----
             need = next((
                 n for n in needs
                 if n["organ_type"] == organ_type
@@ -133,7 +102,6 @@ class Matcher:
             if not need:
                 continue
 
-            # ---- build match record ----
             match_entry = {
                 "donor_id": donor_id,
                 "organ_id": organ_id,
@@ -145,13 +113,9 @@ class Matcher:
                 "status": "matched",
             }
 
-            # 1️ Save match to database and get match_id
             match_id = self.save_to_db(match_entry)
-
-            # 2️ Auto-create offer
             self.create_offer(match_id, need["recipient_id"])
 
-            # 3️ Publish Pub/Sub event to trigger Cloud Function
             publish_event({
                 "match_id": match_id,
                 "donor_id": donor_id,
@@ -161,25 +125,19 @@ class Matcher:
                 "message": "New donor-recipient match created"
             })
 
-            # 4️ Add to API response
             match_entry["match_id"] = match_id
             results.append(match_entry)
 
-            # 5️ Delete consumed organ + need
             self.ms1.delete_organ(organ_id)
             self.ms2.delete_need(need["id"])
-
-            # 6️ Remove matched need from list to avoid duplicates
             needs = [n for n in needs if n["id"] != need["id"]]
 
         return results
 
-    # ---------------------------------------------------------
-    # OPTIONAL PAGINATION
-    # ---------------------------------------------------------
-    def paginate(self, items: List[Dict], limit: int, offset: int) -> List[Dict]:
-        return items[offset: offset + limit]
 
+    # ==========================================================
+    # =============== CRUD FUNCTIONS FOR API ===================
+    # ==========================================================
 
 def list_matches():
     conn = get_connection()
@@ -189,6 +147,74 @@ def list_matches():
     cur.close()
     conn.close()
     return rows
+
+
+def get_match(match_id: int) -> Optional[Dict]:
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM matches WHERE id = %s", (match_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
+
+
+def create_match(payload: MatchCreate) -> Dict:
+    conn = get_connection()
+    cur = conn.cursor()
+
+    sql = """
+        INSERT INTO matches
+        (donor_id, organ_id, recipient_id,
+         donor_blood_type, recipient_blood_type,
+         organ_type, score, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+    data = payload.model_dump(by_alias=True)
+
+    cur.execute(sql, (
+        data["donorId"], data["organId"], data.get("recipientId"),
+        data.get("donorBloodType"), data.get("recipientBloodType"),
+        data.get("organType"), data.get("score"), data.get("status")
+    ))
+
+    match_id = cur.lastrowid
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    return get_match(match_id)
+
+
+def update_match(match_id: int, payload: MatchUpdate) -> Optional[Dict]:
+    updates = payload.model_dump(exclude_none=True, by_alias=True)
+    if not updates:
+        return get_match(match_id)
+
+    set_clause = ", ".join([f"{key}=%s" for key in updates.keys()])
+    values = list(updates.values())
+
+    conn = get_connection()
+    cur = conn.cursor()
+    sql = f"UPDATE matches SET {set_clause} WHERE id = %s"
+    cur.execute(sql, (*values, match_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return get_match(match_id)
+
+
+def delete_match(match_id: int) -> bool:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM matches WHERE id = %s", (match_id,))
+    deleted = cur.rowcount > 0
+    conn.commit()
+    cur.close()
+    conn.close()
+    return deleted
 
 
 def get_full_match(match_id: int):

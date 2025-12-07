@@ -1,7 +1,8 @@
-# coding: utf-8
+# src/openapi_server/models/match_model.py
 
+# coding: utf-8
 """
-Match Model — represents relationship between donor, organ, and recipient.
+Match model — represents relationship between donor, organ, and recipient.
 """
 
 from __future__ import annotations
@@ -16,11 +17,10 @@ except ImportError:
     from typing_extensions import Self
 
 
+# ===============================================================
+# Main Match Response Model
+# ===============================================================
 class Match(BaseModel):
-    """
-    Match model for donor-organ-recipient relationships.
-    """
-
     id: Optional[StrictStr] = None
     donor_id: StrictStr = Field(alias="donorId")
     organ_id: StrictStr = Field(alias="organId")
@@ -45,7 +45,7 @@ class Match(BaseModel):
     ]
 
     @field_validator("status")
-    def status_validate_enum(cls, value):
+    def validate_status(cls, value):
         allowed = ("pending", "matched", "accepted", "declined", "expired")
         if value is None:
             return value
@@ -58,16 +58,6 @@ class Match(BaseModel):
         "validate_assignment": True,
         "protected_namespaces": (),
     }
-
-    def to_str(self) -> str:
-        return pprint.pformat(self.model_dump(by_alias=True))
-
-    def to_json(self) -> str:
-        return json.dumps(self.to_dict())
-
-    @classmethod
-    def from_json(cls, json_str: str) -> Self:
-        return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump(by_alias=True, exclude_none=True)
@@ -90,3 +80,47 @@ class Match(BaseModel):
                 "status": obj.get("status"),
             }
         )
+
+
+# ===============================================================
+# MatchCreate — POST /matches
+# ===============================================================
+class MatchCreate(BaseModel):
+    donor_id: StrictStr = Field(alias="donorId")
+    organ_id: StrictStr = Field(alias="organId")
+    recipient_id: Optional[StrictStr] = Field(None, alias="recipientId")
+
+    donor_blood_type: Optional[StrictStr] = Field(None, alias="donorBloodType")
+    recipient_blood_type: Optional[StrictStr] = Field(None, alias="recipientBloodType")
+    organ_type: Optional[StrictStr] = Field(None, alias="organType")
+
+    score: Optional[float] = None
+    status: Optional[StrictStr] = None
+
+    model_config = {
+        "populate_by_name": True,
+        "validate_assignment": True,
+        "protected_namespaces": (),
+    }
+
+
+# ===============================================================
+# MatchUpdate — PATCH/PUT /matches/{id}
+# ===============================================================
+class MatchUpdate(BaseModel):
+    donor_id: Optional[StrictStr] = Field(None, alias="donorId")
+    organ_id: Optional[StrictStr] = Field(None, alias="organId")
+    recipient_id: Optional[StrictStr] = Field(None, alias="recipientId")
+
+    donor_blood_type: Optional[StrictStr] = Field(None, alias="donorBloodType")
+    recipient_blood_type: Optional[StrictStr] = Field(None, alias="recipientBloodType")
+    organ_type: Optional[StrictStr] = Field(None, alias="organType")
+
+    score: Optional[float] = None
+    status: Optional[StrictStr] = None
+
+    model_config = {
+        "populate_by_name": True,
+        "validate_assignment": True,
+        "protected_namespaces": (),
+    }
