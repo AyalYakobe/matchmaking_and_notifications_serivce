@@ -14,10 +14,10 @@ def _convert_match_row(row: Dict) -> Optional[Dict]:
         return None
 
     return {
-        "id": row["id"],
-        "donorId": row["donor_id"],
-        "organId": row["organ_id"],
-        "recipientId": row["recipient_id"],
+        "id": str(row["id"]),   # <---- FIX: MUST BE STRING
+        "donorId": str(row["donor_id"]) if row["donor_id"] is not None else None,
+        "organId": str(row["organ_id"]) if row["organ_id"] is not None else None,
+        "recipientId": str(row["recipient_id"]) if row["recipient_id"] is not None else None,
         "donorBloodType": row["donor_blood_type"],
         "recipientBloodType": row["recipient_blood_type"],
         "organType": row["organ_type"],
@@ -50,7 +50,7 @@ class Matcher:
         return d in rules and r in rules[d]
 
     # ---------------------------------------------------------
-    # SQL INSERT FOR AUTOMATED MATCHING
+    # SQL INSERT FOR AUTOMATIC MATCHING
     # ---------------------------------------------------------
     def save_to_db(self, match: Dict) -> int:
         conn = get_connection()
@@ -156,7 +156,7 @@ class Matcher:
 
 
 # ==========================================================
-# =============== CRUD FUNCTIONS FOR API ===================
+# =============== CRUD FUNCTIONS ===========================
 # ==========================================================
 
 def list_matches():
