@@ -60,7 +60,7 @@ The OffersService provides:
 
 ---
 
-# ☁️ Cloud SQL Database Information  
+# Cloud SQL Database Information  
 *For class/demo use only (do NOT use these in production).*
 
 Cloud SQL Instance ID: cloudsql2  
@@ -75,7 +75,7 @@ Organdonation1!
 
 ---
 
-# 🛠 Database Setup
+# Database Setup
 
 ### Create Tables
 PYTHONPATH=src python3 src/openapi_server/db/create_tables.py
