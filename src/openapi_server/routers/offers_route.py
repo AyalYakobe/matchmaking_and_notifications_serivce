@@ -1,7 +1,7 @@
 # src/openapi_server/routers/offers_route.py
 
-from fastapi import APIRouter, Response, HTTPException
 from typing import List
+from fastapi import APIRouter, Response, HTTPException, Header
 
 from openapi_server.models.offer import Offer, OfferCreate, OfferUpdate
 from openapi_server.services.offers_service import (
@@ -15,8 +15,6 @@ from openapi_server.services.offers_service import (
 router = APIRouter()
 
 
-from fastapi import APIRouter, Response, HTTPException, Header
-
 @router.get("/offers", response_model=List[Offer], tags=["Offers"])
 async def offers_get(
     limit: int = 10,
@@ -27,16 +25,15 @@ async def offers_get(
 
     offers, etag = await get_offers(limit, offset)
 
-    # 1. Conditional GET check
+    # Conditional GET check
     if etag and if_none_match == etag:
-        response.status_code = 304
-        return
+        return Response(status_code=304)
 
-    # 2. Return ETag
+    # Send ETag back
     if etag:
         response.headers["ETag"] = etag
 
-    # 3. Pagination
+    # Pagination header
     response.headers["Link"] = (
         f'</offers?limit={limit}&offset={offset + limit}>; rel="next"'
     )
