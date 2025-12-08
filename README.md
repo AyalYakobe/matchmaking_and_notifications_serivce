@@ -71,9 +71,7 @@ The OffersService provides:
 
 ### API-First → Code-First Workflow Notes
 
-This project originally began using a **Swagger / OpenAPI-first** approach. The initial plan was to define all endpoints in `openapi.yaml` before implementing any functionality.
-
-However, as the project grew, it became clear that implementing the service directly in code was a more flexible way to expand functionality, experiment with logic, and iterate quickly. Because of this, I transitioned to a **code-first workflow**, building out the FastAPI routes directly and allowing the implementation to drive the final API shape.
+This project originally began using a **Swagger / OpenAPI-first** approach. Indeed the first couple Sprints operated in this way. However, as the project grew and some more sophistcated functionality was needed, it became clear that implementing the service directly in code was a more flexible way to expand functionality, experiment with logic, and iterate quickly. Because of this, I transitioned partially to a code-first workflow, building out FastAPI routes directly and allowing the implementation to drive the final API shape.
 
 After completing the core functionality (Matches, Offers, Composite services, async tasks, etc.), I went back and **updated the OpenAPI YAML file to match the final implementation**. The YAML now serves primarily as:
 
