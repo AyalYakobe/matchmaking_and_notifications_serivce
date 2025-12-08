@@ -15,24 +15,34 @@ from openapi_server.services.offers_service import (
 router = APIRouter()
 
 
-# ---------------------------------------------------------
-# GET /offers  (ETag + pagination)
-# ---------------------------------------------------------
+from fastapi import APIRouter, Response, HTTPException, Header
+
 @router.get("/offers", response_model=List[Offer], tags=["Offers"])
-async def offers_get(limit: int = 10, offset: int = 0, response: Response = None):
+async def offers_get(
+    limit: int = 10,
+    offset: int = 0,
+    response: Response = None,
+    if_none_match: str = Header(default=None),
+):
 
     offers, etag = await get_offers(limit, offset)
 
-    # ETag header
+    # 1. Conditional GET check
+    if etag and if_none_match == etag:
+        response.status_code = 304
+        return
+
+    # 2. Return ETag
     if etag:
         response.headers["ETag"] = etag
 
-    # Pagination Link header (relative path)
+    # 3. Pagination
     response.headers["Link"] = (
         f'</offers?limit={limit}&offset={offset + limit}>; rel="next"'
     )
 
     return offers
+
 
 
 # ---------------------------------------------------------
