@@ -1,338 +1,625 @@
 openapi: 3.0.3
 info:
-  title: Matchmaking and Notification Service API
+  title: Matchmaking, Offers, and Composite API
   version: 1.0.0
   description: |
-    API-first definition for the Matchmaking and Notification microservice.
-    Each resource (matches, offers, health) includes GET, POST, PUT, and DELETE methods.
-    These endpoints are defined for design purposes only — no implementation is required.
+    Fully updated OpenAPI specification based on the actual FastAPI implementation.
+    Includes MATCH, OFFER, and COMPOSITE endpoints.
 
 servers:
   - url: http://localhost:8000
     description: Local development server
 
 paths:
+
+  ############################################################
+  # MATCH ROUTES
+  ############################################################
+
   /matches:
     get:
-      summary: Get all matches
-      description: Retrieve a list of all matches.
+      tags: [Matches]
+      summary: List matches
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
       responses:
-        '200':
-          description: A list of matches
+        "200":
+          description: List of matches
+          headers:
+            Link:
+              schema:
+                type: string
+              description: Pagination link header
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Match'
+                  $ref: "#/components/schemas/Match"
 
     post:
-      summary: Create a new match
-      description: Add a new donor-organ match.
+      tags: [Matches]
+      summary: Create a match
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Match'
+              $ref: "#/components/schemas/MatchCreate"
       responses:
-        '201':
-          description: Match created successfully
+        "201":
+          description: Match created
+          headers:
+            Location:
+              schema:
+                type: string
+            Content-Location:
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Match'
+                $ref: "#/components/schemas/Match"
 
-    put:
-      summary: Update all matches (bulk operation placeholder)
-      description: Update multiple matches (for demonstration purposes).
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Match'
-      responses:
-        '200':
-          description: Matches updated successfully
-
-    delete:
-      summary: Delete all matches
-      description: Delete all matches (for demonstration purposes).
-      responses:
-        '204':
-          description: All matches deleted
-
-  /matches/{id}:
+  /matches/{match_id}:
     get:
-      summary: Get a match by ID
+      tags: [Matches]
+      summary: Get match by ID
       parameters:
-        - name: id
+        - name: match_id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
-        '200':
-          description: Match retrieved successfully
+        "200":
+          description: Match found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Match'
-        '404':
+                $ref: "#/components/schemas/Match"
+        "404":
+          description: Match not found
+
+    patch:
+      tags: [Matches]
+      summary: Update match (partial)
+      parameters:
+        - name: match_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchUpdate"
+      responses:
+        "200":
+          description: Match updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "404":
           description: Match not found
 
     put:
-      summary: Update a specific match
+      tags: [Matches]
+      summary: Update match (full)
       parameters:
-        - name: id
+        - name: match_id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Match'
+              $ref: "#/components/schemas/MatchUpdate"
       responses:
-        '200':
-          description: Match updated successfully
-        '404':
+        "200":
+          description: Match updated
+        "404":
           description: Match not found
 
-    post:
-      summary: Duplicate or reprocess a specific match
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '201':
-          description: Match reprocessed successfully
-
     delete:
-      summary: Delete a specific match
+      tags: [Matches]
+      summary: Delete match
       parameters:
-        - name: id
+        - name: match_id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
-        '204':
-          description: Match deleted successfully
-        '404':
+        "204":
+          description: Match deleted
+        "404":
           description: Match not found
 
-  /offers:
+  /matches/{match_id}/full:
     get:
-      summary: Get all offers
-      description: Retrieve a list of all offers.
-      responses:
-        '200':
-          description: A list of offers
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Offer'
-
-    post:
-      summary: Create a new offer
-      description: Add a new allocation offer.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Offer'
-      responses:
-        '201':
-          description: Offer created successfully
-
-    put:
-      summary: Update multiple offers (bulk operation placeholder)
-      description: Update several offers at once (for demonstration purposes).
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Offer'
-      responses:
-        '200':
-          description: Offers updated successfully
-
-    delete:
-      summary: Delete all offers
-      description: Delete all offers (for demonstration purposes).
-      responses:
-        '204':
-          description: All offers deleted
-
-  /offers/{id}:
-    get:
-      summary: Get an offer by ID
+      tags: [Matches]
+      summary: Full joined match information
       parameters:
-        - name: id
+        - name: match_id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
-        '200':
-          description: Offer retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Offer'
-        '404':
-          description: Offer not found
-
-    put:
-      summary: Update an offer by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Offer'
-      responses:
-        '200':
-          description: Offer updated successfully
-        '404':
-          description: Offer not found
-
-    post:
-      summary: Duplicate or resend a specific offer
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '201':
-          description: Offer duplicated successfully
-
-    delete:
-      summary: Delete an offer by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Offer deleted successfully
-        '404':
-          description: Offer not found
-
-  /health:
-    get:
-      summary: Health check
-      description: Retrieve API health status.
-      responses:
-        '200':
-          description: Service is healthy
+        "200":
+          description: Full match details
           content:
             application/json:
               schema:
                 type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
+        "404":
+          description: Match not found
+
+  /matches/{match_id}/async:
+    post:
+      tags: [Matches]
+      summary: Start async processing for match
+      parameters:
+        - name: match_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "202":
+          description: Async task started
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AsyncTaskStart"
+
+  /matches/async/tasks/{task_id}:
+    get:
+      tags: [Matches]
+      summary: Get async task status
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AsyncTask"
+        "404":
+          description: Task not found
+
+
+  ############################################################
+  # OFFER ROUTES
+  ############################################################
+
+  /offers:
+    get:
+      tags: [Offers]
+      summary: List offers
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of offers
+          headers:
+            ETag:
+              schema:
+                type: string
+            Link:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Offer"
 
     post:
-      summary: Report custom health status
-      description: Send custom health status for testing.
+      tags: [Offers]
+      summary: Create offer
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                message:
-                  type: string
+              $ref: "#/components/schemas/OfferCreate"
       responses:
-        '201':
-          description: Health status recorded
+        "201":
+          description: Offer created
+          headers:
+            Location:
+              schema:
+                type: string
+            Content-Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Offer"
+
+
+  /offers/{offer_id}:
+    get:
+      tags: [Offers]
+      summary: Get offer by ID
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Offer found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Offer"
+        "404":
+          description: Offer not found
 
     put:
-      summary: Update health configuration
-      description: Update simulated health configuration.
+      tags: [Offers]
+      summary: Update offer
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                mode:
-                  type: string
+              $ref: "#/components/schemas/OfferUpdate"
       responses:
-        '200':
-          description: Health configuration updated
+        "200":
+          description: Offer updated
+        "404":
+          description: Offer not found
+
+    patch:
+      tags: [Offers]
+      summary: Update offer (partial)
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferUpdate"
+      responses:
+        "200":
+          description: Offer updated
+        "404":
+          description: Offer not found
 
     delete:
-      summary: Reset health data
-      description: Delete or reset simulated health state.
+      tags: [Offers]
+      summary: Delete offer
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
-        '204':
-          description: Health data reset successfully
+        "204":
+          description: Offer deleted
+        "404":
+          description: Offer not found
+
+
+  ############################################################
+  # COMPOSITE ROUTES (MS1 + MS2)
+  ############################################################
+
+  /ms1/health:
+    get:
+      tags: [Composite]
+      summary: MS1 health check
+      responses:
+        "200":
+          description: MS1 response
+
+  /ms1/donors:
+    get:
+      tags: [Composite]
+      summary: List donors
+      responses:
+        "200":
+          description: Donor list
+
+  /ms1/donors/{donor_id}:
+    get:
+      tags: [Composite]
+      summary: Get donor
+      parameters:
+        - name: donor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Donor found
+
+  /ms1/donors/{donor_id}/organs:
+    get:
+      tags: [Composite]
+      summary: List donor organs
+      parameters:
+        - name: donor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Organs retrieved
+
+  /ms1/organs:
+    get:
+      tags: [Composite]
+      summary: List organs
+      responses:
+        "200":
+          description: Organ list
+
+  /ms1/consents:
+    get:
+      tags: [Composite]
+      summary: List consents
+      responses:
+        "200":
+          description: Consent list
+
+  /ms1/consents/{consent_id}:
+    get:
+      tags: [Composite]
+      summary: Get consent
+      parameters:
+        - name: consent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Consent found
+
+  /ms1/all:
+    get:
+      tags: [Composite]
+      summary: Full MS1 snapshot
+      responses:
+        "200":
+          description: Snapshot
+
+  /ms2/recipients:
+    get:
+      tags: [Composite]
+      summary: List recipients
+      responses:
+        "200":
+          description: Recipients
+
+  /ms2/recipients/{recipient_id}:
+    get:
+      tags: [Composite]
+      summary: Get recipient
+      parameters:
+        - name: recipient_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Recipient found
+
+  /ms2/recipients/{recipient_id}/needs:
+    get:
+      tags: [Composite]
+      summary: List needs for recipient
+      parameters:
+        - name: recipient_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Needs list
+
+  /ms2/needs:
+    get:
+      tags: [Composite]
+      summary: List needs
+      responses:
+        "200":
+          description: Needs
+
+  /ms2/needs/{need_id}:
+    get:
+      tags: [Composite]
+      summary: Get need
+      parameters:
+        - name: need_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Need found
+
+  /ms2/hospitals:
+    get:
+      tags: [Composite]
+      summary: List hospitals
+      responses:
+        "200":
+          description: Hospitals
+
+  /ms2/hospitals/{hospital_id}:
+    get:
+      tags: [Composite]
+      summary: Get hospital
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Hospital found
+
+  /ms2/all:
+    get:
+      tags: [Composite]
+      summary: Full MS2 snapshot
+      responses:
+        "200":
+          description: Snapshot
+
+  /aggregate/full-snapshot:
+    get:
+      tags: [Composite]
+      summary: Get full composite snapshot
+      responses:
+        "200":
+          description: Snapshot
+
+
+############################################################
+# COMPONENT SCHEMAS
+############################################################
 
 components:
   schemas:
+
     Match:
       type: object
       properties:
         id:
-          type: string
-          example: "match123"
+          type: integer
         donorId:
           type: string
-          example: "donor789"
         organId:
           type: string
-          example: "organ456"
         status:
           type: string
-          enum: [pending, accepted, declined, expired]
-          example: "pending"
-      required:
-        - donorId
-        - organId
+      required: [donorId, organId]
+
+    MatchCreate:
+      type: object
+      properties:
+        donorId:
+          type: string
+        organId:
+          type: string
+      required: [donorId, organId]
+
+    MatchUpdate:
+      type: object
+      properties:
+        donorId:
+          type: string
+        organId:
+          type: string
+        status:
+          type: string
+
+    AsyncTaskStart:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          example: running
+
+    AsyncTask:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+        result:
+          type: object
+          nullable: true
 
     Offer:
       type: object
       properties:
         id:
-          type: string
-          example: "offer001"
+          type: integer
         matchId:
-          type: string
-          example: "match123"
+          type: integer
         status:
           type: string
-          enum: [pending, accepted, declined, expired]
-          example: "pending"
-      required:
-        - matchId
+      required: [matchId]
+
+    OfferCreate:
+      type: object
+      properties:
+        matchId:
+          type: integer
+      required: [matchId]
+
+    OfferUpdate:
+      type: object
+      properties:
+        matchId:
+          type: integer
+        status:
+          type: string

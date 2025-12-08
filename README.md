@@ -69,6 +69,22 @@ The OffersService provides:
 
 ---
 
+### API-First → Code-First Workflow Notes
+
+This project originally began using a **Swagger / OpenAPI-first** approach. The initial plan was to define all endpoints in `openapi.yaml` before implementing any functionality.
+
+However, as the project grew, it became clear that implementing the service directly in code was a more flexible way to expand functionality, experiment with logic, and iterate quickly. Because of this, I transitioned to a **code-first workflow**, building out the FastAPI routes directly and allowing the implementation to drive the final API shape.
+
+After completing the core functionality (Matches, Offers, Composite services, async tasks, etc.), I went back and **updated the OpenAPI YAML file to match the final implementation**. The YAML now serves primarily as:
+
+- A reference document  
+- A complete description of all active endpoints  
+- A way to expose Swagger UI at `/docs`
+
+The original API-first drafts and earlier versions of the spec are preserved in the `archive/` directory for historical reference.
+
+---
+
 # Cloud SQL Database Information  
 *For class/demo use only (do NOT use these in production).*
 
@@ -117,7 +133,7 @@ This migration:
 - Fully idempotent  
 - Compatible with Cloud SQL (MySQL 5.7/8.x)
 
-# Database Migration (migration1.sql)
+# Database Migration (migration2.sql)
 
 Located at:
 
@@ -125,9 +141,13 @@ src/openapi_server/db/migrations/migration2.sql
 
 Migration 2 adds a persistent async_tasks table with indexes and foreign-key support to enable durable 202-Accepted asynchronous processing and task polling.
 
+# Database Migration (migration3.sql)
+These migration steps convert `match_id` from an `INT` to a `VARCHAR(64)` so the system can use UUID-style match identifiers. The old unique index based on the integer column is dropped, and a new unique constraint is added to the updated `VARCHAR` column to maintain the rule that each match can only have one offer.
+
+
 ### Run Migration
 
-mysql -h 35.243.166.35 -u svc_c -p service_c_db < src/openapi_server/db/migrations/migration1.sql
+mysql -h 35.243.166.35 -u svc_c -p service_c_db < src/openapi_server/db/migrations/migrationX.sql
 
 Password: SvcCpass1!
 
