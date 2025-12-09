@@ -4,7 +4,6 @@ import requests
 from openapi_server.clients.ms1_client import MS1Client
 from openapi_server.clients.ms2_client import MS2Client
 
-
 router = APIRouter()
 
 # Shared base URL for MS1 + MS2
@@ -61,6 +60,13 @@ def ms1_all():
     }
 
 
+# ---------- NEW: DELETE organ ----------
+@router.delete("/ms1/organs/{organ_id}", tags=["Composite"])
+def ms1_delete_organ(organ_id: str):
+    return ms1.delete_organ(organ_id)
+
+
+
 # ===============================================================
 # MS2: Recipient Registry
 # ===============================================================
@@ -106,6 +112,13 @@ def ms2_all():
         "needs": ms2.list_needs(),
         "hospitals": ms2.list_hospitals(),
     }
+
+
+# ---------- NEW: DELETE need ----------
+@router.delete("/ms2/needs/{need_id}", tags=["Composite"])
+def ms2_delete_need(need_id: str):
+    return ms2.delete_need(need_id)
+
 
 
 # ===============================================================
